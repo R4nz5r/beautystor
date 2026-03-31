@@ -1,5 +1,5 @@
-import { NavLink as RouterNavLink, Outlet, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Package, ShoppingCart, Users, Image, Star, Settings, LogOut, ChevronLeft, Tag, AlertCircle, BarChart3, MessageCircle } from 'lucide-react';
+import { NavLink as RouterNavLink, Outlet, useNavigate, useLocation } from 'react-router-dom';
+import { LayoutDashboard, Package, ShoppingCart, Users, Image, Star, Settings, LogOut, ChevronLeft, Tag, AlertCircle, BarChart3, MessageCircle, Home } from 'lucide-react';
 import { useIsAdmin, useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { useEffect, useState } from 'react';
@@ -17,14 +17,44 @@ const links = [
   { to: '/admin/reviews', icon: Star, label: 'রিভিউ' },
   { to: '/admin/chat', icon: MessageCircle, label: 'লাইভ চ্যাট' },
   { to: '/admin/settings', icon: Settings, label: 'সেটিংস' },
-  { to: '/admin/settings', icon: Settings, label: 'সেটিংস' },
 ];
 
 const AdminLayout = () => {
   const { user, loading: authLoading } = useAuth();
   const { isAdmin, loading: roleLoading } = useIsAdmin();
   const navigate = useNavigate();
+  const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [unreadChat, setUnreadChat] = useState(0);
+
+  // Reset unread when on chat page
+  useEffect(() => {
+    if (location.pathname === '/admin/chat') {
+      setUnreadChat(0);
+    }
+  }, [location.pathname]);
+
+  // Realtime subscription for new chat messages
+  useEffect(() => {
+    const channel = supabase
+      .channel('admin-chat-unread')
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'chat_messages',
+      }, (payload: any) => {
+        if (payload.new?.sender_type === 'user') {
+          // Only increment if not currently on chat page
+          setUnreadChat(prev => {
+            if (window.location.pathname === '/admin/chat') return prev;
+            return prev + 1;
+          });
+        }
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, []);
 
   useEffect(() => {
     if (!authLoading && !user) navigate('/login');
@@ -47,7 +77,7 @@ const AdminLayout = () => {
         <nav className="flex-1 p-2 space-y-1">
           {links.map(l => (
             <RouterNavLink
-              key={l.to}
+              key={l.to + l.label}
               to={l.to}
               end={l.end}
               className={({ isActive }) =>
@@ -57,10 +87,23 @@ const AdminLayout = () => {
             >
               <l.icon className="h-4 w-4 flex-shrink-0" />
               {sidebarOpen && <span>{l.label}</span>}
+              {l.to === '/admin/chat' && unreadChat > 0 && (
+                <span className="ml-auto bg-destructive text-destructive-foreground text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1">
+                  {unreadChat > 99 ? '99+' : unreadChat}
+                </span>
+              )}
             </RouterNavLink>
           ))}
         </nav>
-        <div className="p-2 border-t">
+        <div className="p-2 border-t space-y-1">
+          <button
+            onClick={() => navigate('/')}
+            className="flex items-center gap-2 px-3 py-2.5 rounded-md text-sm font-medium text-foreground/80 hover:bg-muted w-full transition-colors"
+            title="হোম"
+          >
+            <Home className="h-4 w-4" />
+            {sidebarOpen && <span>হোম</span>}
+          </button>
           <button
             onClick={async () => { await supabase.auth.signOut(); navigate('/'); }}
             className="flex items-center gap-2 px-3 py-2.5 rounded-md text-sm font-medium text-destructive hover:bg-destructive/10 w-full transition-colors"
