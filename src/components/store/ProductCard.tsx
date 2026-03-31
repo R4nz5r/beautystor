@@ -38,6 +38,7 @@ const ProductCard = ({ product }: { product: Product }) => {
           alt={product.name}
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
           loading="lazy"
+          onError={(e) => { (e.target as HTMLImageElement).src = '/placeholder.svg'; }}
         />
         {hasDiscount && (
           <span className="absolute top-2 left-2 bg-primary text-primary-foreground text-xs font-bold px-2 py-1 rounded">
