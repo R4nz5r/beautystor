@@ -46,8 +46,7 @@ const AdminCustomers = () => {
           <tbody className="divide-y">
             {customers.map(c => (
               <tr key={c.id} className="hover:bg-muted/50">
-                <td className="p-3 font-medium">{c.name || '-'}</td>
-                <td className="p-3">{c.order_name || <span className="text-muted-foreground">অর্ডার নেই</span>}</td>
+                <td className="p-3 font-medium">{c.order_name || <span className="text-muted-foreground">অর্ডার নেই</span>}</td>
                 <td className="p-3">{c.phone || c.order_phone || '-'}</td>
                 <td className="p-3 text-muted-foreground">{c.address || '-'}</td>
                 <td className="p-3 text-xs">{new Date(c.created_at).toLocaleDateString('bn-BD')}</td>
