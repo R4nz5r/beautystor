@@ -85,6 +85,24 @@ const ProductsPage = () => {
         </RadioGroup>
       </div>
 
+      {/* Sort */}
+      <div>
+        <Label className="text-sm font-medium mb-3 block">সর্ট করুন</Label>
+        <RadioGroup value={sortBy} onValueChange={setSortBy} className="space-y-2">
+          <div className="flex items-center gap-2">
+            <RadioGroupItem value="newest" id="sort-newest" />
+            <Label htmlFor="sort-newest" className="text-sm cursor-pointer">নতুন আগে</Label>
+          </div>
+          <div className="flex items-center gap-2">
+            <RadioGroupItem value="price_asc" id="sort-price-asc" />
+            <Label htmlFor="sort-price-asc" className="text-sm cursor-pointer">দাম: কম থেকে বেশি</Label>
+          </div>
+          <div className="flex items-center gap-2">
+            <RadioGroupItem value="price_desc" id="sort-price-desc" />
+            <Label htmlFor="sort-price-desc" className="text-sm cursor-pointer">দাম: বেশি থেকে কম</Label>
+          </div>
+        </RadioGroup>
+      </div>
       {/* Featured only */}
       <div>
         <div className="flex items-center gap-2">
