@@ -6,14 +6,19 @@ import { Input } from '@/components/ui/input';
 import Header from '@/components/store/Header';
 import Footer from '@/components/store/Footer';
 import { toast } from 'sonner';
+import { validateEmail } from '@/lib/validators';
 
 const ForgotPassword = () => {
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState('');
   const [sent, setSent] = useState(false);
+  const [emailError, setEmailError] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const err = validateEmail(email);
+    setEmailError(err);
+    if (err) return;
     setLoading(true);
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: `${window.location.origin}/reset-password`,
@@ -38,7 +43,8 @@ const ForgotPassword = () => {
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <label className="text-sm font-medium mb-1 block">ইমেইল</label>
-                <Input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="আপনার ইমেইল" required />
+                <Input type="email" value={email} onChange={e => { setEmail(e.target.value); setEmailError(null); }} placeholder="আপনার ইমেইল" />
+                {emailError && <p className="text-xs text-destructive mt-1">{emailError}</p>}
               </div>
               <Button type="submit" className="w-full" disabled={loading}>
                 {loading ? 'পাঠানো হচ্ছে...' : 'রিসেট লিংক পাঠান'}

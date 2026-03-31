@@ -6,15 +6,27 @@ import { Input } from '@/components/ui/input';
 import Header from '@/components/store/Header';
 import Footer from '@/components/store/Footer';
 import { toast } from 'sonner';
+import { validateEmail, validatePassword } from '@/lib/validators';
 
 const Login = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [errors, setErrors] = useState<Record<string, string | null>>({});
+
+  const validate = () => {
+    const e = {
+      email: validateEmail(email),
+      password: password ? null : 'পাসওয়ার্ড দিন',
+    };
+    setErrors(e);
+    return !Object.values(e).some(Boolean);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!validate()) return;
     setLoading(true);
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) {
@@ -40,11 +52,13 @@ const Login = () => {
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <label className="text-sm font-medium mb-1 block">ইমেইল</label>
-                <Input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="আপনার ইমেইল" required />
+                <Input type="email" value={email} onChange={e => { setEmail(e.target.value); setErrors(er => ({ ...er, email: null })); }} placeholder="আপনার ইমেইল" />
+                {errors.email && <p className="text-xs text-destructive mt-1">{errors.email}</p>}
               </div>
               <div>
                 <label className="text-sm font-medium mb-1 block">পাসওয়ার্ড</label>
-                <Input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="পাসওয়ার্ড" required />
+                <Input type="password" value={password} onChange={e => { setPassword(e.target.value); setErrors(er => ({ ...er, password: null })); }} placeholder="পাসওয়ার্ড" />
+                {errors.password && <p className="text-xs text-destructive mt-1">{errors.password}</p>}
               </div>
               <div className="text-right">
                 <Link to="/forgot-password" className="text-sm text-primary hover:underline">পাসওয়ার্ড ভুলে গেছেন?</Link>

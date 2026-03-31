@@ -177,11 +177,13 @@ const ChatWidget = () => {
           <div className="w-full space-y-3">
             <div>
               <label className="text-xs font-medium mb-1 block">আপনার নাম *</label>
-              <Input placeholder="নাম লিখুন" value={name} onChange={e => setName(e.target.value)} maxLength={100} required />
+              <Input placeholder="নাম লিখুন" value={name} onChange={e => { setName(e.target.value); setChatErrors(er => ({ ...er, name: null })); }} maxLength={100} />
+              {chatErrors.name && <p className="text-xs text-destructive mt-1">{chatErrors.name}</p>}
             </div>
             <div>
               <label className="text-xs font-medium mb-1 block">ফোন নম্বর (ঐচ্ছিক)</label>
-              <Input placeholder="01XXXXXXXXX" value={phone} onChange={e => setPhone(e.target.value)} maxLength={15} type="tel" />
+              <Input placeholder="01XXXXXXXXX" value={phone} onChange={e => { setPhone(e.target.value); setChatErrors(er => ({ ...er, phone: null })); }} maxLength={15} type="tel" />
+              {chatErrors.phone && <p className="text-xs text-destructive mt-1">{chatErrors.phone}</p>}
             </div>
           </div>
           <Button type="submit" className="w-full">চ্যাট শুরু করুন</Button>

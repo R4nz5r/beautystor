@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
+import { validateName, validateRequired } from '@/lib/validators';
 
 interface ReviewFormProps {
   productId: string;
@@ -19,11 +20,20 @@ const ReviewForm = ({ productId, onSubmitted }: ReviewFormProps) => {
   const [hoverRating, setHoverRating] = useState(0);
   const [comment, setComment] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string | null>>({});
+
+  const validate = () => {
+    const e: Record<string, string | null> = {
+      comment: validateRequired(comment, 'মন্তব্য', 3),
+    };
+    if (!user) e.name = validateName(name);
+    setErrors(e);
+    return !Object.values(e).some(Boolean);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!comment.trim()) { toast.error('মন্তব্য লিখুন'); return; }
-    if (!name.trim() && !user) { toast.error('আপনার নাম লিখুন'); return; }
+    if (!validate()) return;
 
     setSubmitting(true);
     const { error } = await supabase.from('reviews').insert({
@@ -38,7 +48,7 @@ const ReviewForm = ({ productId, onSubmitted }: ReviewFormProps) => {
       toast.error('রিভিউ সাবমিট করতে সমস্যা হয়েছে');
     } else {
       toast.success('রিভিউ সাবমিট করা হয়েছে! অ্যাডমিন অ্যাপ্রুভ করলে দেখা যাবে।');
-      setName(''); setRating(5); setComment('');
+      setName(''); setRating(5); setComment(''); setErrors({});
       onSubmitted();
     }
     setSubmitting(false);
@@ -53,9 +63,10 @@ const ReviewForm = ({ productId, onSubmitted }: ReviewFormProps) => {
           <Input
             placeholder="আপনার নাম"
             value={name}
-            onChange={e => setName(e.target.value)}
+            onChange={e => { setName(e.target.value); setErrors(er => ({ ...er, name: null })); }}
             maxLength={100}
           />
+          {errors.name && <p className="text-xs text-destructive mt-1">{errors.name}</p>}
         </div>
       )}
 
@@ -81,10 +92,11 @@ const ReviewForm = ({ productId, onSubmitted }: ReviewFormProps) => {
         <Textarea
           placeholder="আপনার মন্তব্য লিখুন..."
           value={comment}
-          onChange={e => setComment(e.target.value)}
+          onChange={e => { setComment(e.target.value); setErrors(er => ({ ...er, comment: null })); }}
           rows={3}
           maxLength={1000}
         />
+        {errors.comment && <p className="text-xs text-destructive mt-1">{errors.comment}</p>}
       </div>
 
       <Button type="submit" disabled={submitting} size="sm">
