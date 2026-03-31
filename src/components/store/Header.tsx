@@ -54,7 +54,7 @@ const Header = () => {
           <button onClick={() => setSearchOpen(!searchOpen)} className="p-2 hover:bg-muted rounded-full transition-colors">
             <Search className="h-5 w-5" />
           </button>
-          <Link to="/login" className="p-2 hover:bg-muted rounded-full transition-colors">
+          <Link to={user ? "/dashboard" : "/login"} className="p-2 hover:bg-muted rounded-full transition-colors">
             <User className="h-5 w-5" />
           </Link>
           <Link to="/cart" className="p-2 hover:bg-muted rounded-full transition-colors relative">
