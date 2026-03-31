@@ -101,6 +101,68 @@ export type Database = {
         }
         Relationships: []
       }
+      chat_conversations: {
+        Row: {
+          created_at: string
+          id: string
+          session_id: string
+          status: string
+          updated_at: string
+          visitor_email: string | null
+          visitor_name: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          session_id: string
+          status?: string
+          updated_at?: string
+          visitor_email?: string | null
+          visitor_name: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          session_id?: string
+          status?: string
+          updated_at?: string
+          visitor_email?: string | null
+          visitor_name?: string
+        }
+        Relationships: []
+      }
+      chat_messages: {
+        Row: {
+          conversation_id: string
+          created_at: string
+          id: string
+          message: string
+          sender_type: string
+        }
+        Insert: {
+          conversation_id: string
+          created_at?: string
+          id?: string
+          message: string
+          sender_type?: string
+        }
+        Update: {
+          conversation_id?: string
+          created_at?: string
+          id?: string
+          message?: string
+          sender_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "chat_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       coupons: {
         Row: {
           code: string
@@ -372,6 +434,7 @@ export type Database = {
           approved: boolean
           comment: string | null
           created_at: string
+          featured: boolean
           id: string
           name: string | null
           product_id: string
@@ -382,6 +445,7 @@ export type Database = {
           approved?: boolean
           comment?: string | null
           created_at?: string
+          featured?: boolean
           id?: string
           name?: string | null
           product_id: string
@@ -392,6 +456,7 @@ export type Database = {
           approved?: boolean
           comment?: string | null
           created_at?: string
+          featured?: boolean
           id?: string
           name?: string | null
           product_id?: string

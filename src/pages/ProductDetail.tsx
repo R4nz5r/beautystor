@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import Header from '@/components/store/Header';
 import Footer from '@/components/store/Footer';
 import { toast } from 'sonner';
+import ReviewForm from '@/components/store/ReviewForm';
 
 const ProductDetail = () => {
   const { slug } = useParams();
@@ -156,9 +157,17 @@ const ProductDetail = () => {
           </div>
 
           {/* Reviews */}
-          {reviews.length > 0 && (
-            <div className="mt-12">
-              <h2 className="text-xl font-bold mb-4">রিভিউ ({reviews.length})</h2>
+          <div className="mt-12">
+            <h2 className="text-xl font-bold mb-4">রিভিউ ({reviews.length})</h2>
+            
+            <div className="mb-6">
+              <ReviewForm productId={product.id} onSubmitted={() => {
+                supabase.from('reviews').select('*').eq('product_id', product.id).eq('approved', true)
+                  .then(({ data: r }) => { if (r) setReviews(r); });
+              }} />
+            </div>
+
+            {reviews.length > 0 && (
               <div className="space-y-4">
                 {reviews.map(r => (
                   <div key={r.id} className="border rounded-lg p-4">
@@ -172,8 +181,8 @@ const ProductDetail = () => {
                   </div>
                 ))}
               </div>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </main>
       <Footer />
