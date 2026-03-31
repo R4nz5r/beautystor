@@ -37,8 +37,7 @@ const AdminCustomers = () => {
         <table className="w-full text-sm">
           <thead className="bg-muted">
             <tr>
-              <th className="text-left p-3 font-medium">প্রোফাইল নাম</th>
-              <th className="text-left p-3 font-medium">অর্ডারের নাম</th>
+              <th className="text-left p-3 font-medium">নাম</th>
               <th className="text-left p-3 font-medium">ফোন</th>
               <th className="text-left p-3 font-medium">ঠিকানা</th>
               <th className="text-left p-3 font-medium">তারিখ</th>
