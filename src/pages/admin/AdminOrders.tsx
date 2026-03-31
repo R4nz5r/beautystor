@@ -79,6 +79,7 @@ const AdminOrders = () => {
               <th className="text-left p-3 font-medium">স্ট্যাটাস</th>
               <th className="text-left p-3 font-medium">তারিখ</th>
               <th className="text-left p-3 font-medium">অ্যাকশন</th>
+              <th className="text-left p-3 font-medium">ডিলিট করুন</th>
             </tr>
           </thead>
           <tbody className="divide-y">
