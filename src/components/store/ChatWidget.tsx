@@ -74,9 +74,16 @@ const ChatWidget = () => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
+  const [chatErrors, setChatErrors] = useState<Record<string, string | null>>({});
+
   const startChat = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim()) return;
+    const errs = {
+      name: validateName(name),
+      phone: validatePhone(phone, false),
+    };
+    setChatErrors(errs);
+    if (Object.values(errs).some(Boolean)) return;
     const { data } = await supabase.from('chat_conversations')
       .insert({
         visitor_name: name.trim(),
