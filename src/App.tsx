@@ -81,6 +81,7 @@ const App = () => (
               <Route index element={<AdminDashboard />} />
               <Route path="orders" element={<AdminOrders />} />
               <Route path="incomplete-orders" element={<AdminIncompleteOrders />} />
+              <Route path="recovery-analytics" element={<AdminRecoveryAnalytics />} />
               <Route path="products" element={<AdminProducts />} />
               <Route path="categories" element={<AdminCategories />} />
               <Route path="customers" element={<AdminCustomers />} />
