@@ -38,15 +38,17 @@ export const RequireAuth = ({ children }: { children: ReactNode }) => {
 };
 
 export const useIsAdmin = () => {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (authLoading) return;
     if (!user) { setIsAdmin(false); setLoading(false); return; }
+    setLoading(true);
     supabase.rpc('has_role', { _user_id: user.id, _role: 'admin' })
-      .then(({ data }) => { setIsAdmin(!!data); setLoading(false); });
-  }, [user]);
+      .then(({ data, error }) => { if (!error) setIsAdmin(!!data); setLoading(false); });
+  }, [user, authLoading]);
 
   return { isAdmin, loading };
 };
