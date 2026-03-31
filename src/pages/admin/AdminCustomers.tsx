@@ -37,8 +37,7 @@ const AdminCustomers = () => {
         <table className="w-full text-sm">
           <thead className="bg-muted">
             <tr>
-              <th className="text-left p-3 font-medium">প্রোফাইল নাম</th>
-              <th className="text-left p-3 font-medium">অর্ডারের নাম</th>
+              <th className="text-left p-3 font-medium">নাম</th>
               <th className="text-left p-3 font-medium">ফোন</th>
               <th className="text-left p-3 font-medium">ঠিকানা</th>
               <th className="text-left p-3 font-medium">তারিখ</th>
@@ -47,8 +46,7 @@ const AdminCustomers = () => {
           <tbody className="divide-y">
             {customers.map(c => (
               <tr key={c.id} className="hover:bg-muted/50">
-                <td className="p-3 font-medium">{c.name || '-'}</td>
-                <td className="p-3">{c.order_name || <span className="text-muted-foreground">অর্ডার নেই</span>}</td>
+                <td className="p-3 font-medium">{c.order_name || <span className="text-muted-foreground">অর্ডার নেই</span>}</td>
                 <td className="p-3">{c.phone || c.order_phone || '-'}</td>
                 <td className="p-3 text-muted-foreground">{c.address || '-'}</td>
                 <td className="p-3 text-xs">{new Date(c.created_at).toLocaleDateString('bn-BD')}</td>
