@@ -2,7 +2,7 @@ import { NavLink as RouterNavLink, Outlet, useNavigate, useLocation } from 'reac
 import { LayoutDashboard, Package, ShoppingCart, Users, Image, Star, Settings, LogOut, ChevronLeft, Tag, AlertCircle, BarChart3, MessageCircle, Home } from 'lucide-react';
 import { useIsAdmin, useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 
 const links = [
   { to: '/admin', icon: LayoutDashboard, label: 'ড্যাশবোর্ড', end: true },
@@ -26,6 +26,12 @@ const AdminLayout = () => {
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [unreadChat, setUnreadChat] = useState(0);
+  const locationRef = useRef(location.pathname);
+
+  // Keep ref in sync
+  useEffect(() => {
+    locationRef.current = location.pathname;
+  }, [location.pathname]);
 
   // Reset unread when on chat page
   useEffect(() => {
@@ -34,27 +40,45 @@ const AdminLayout = () => {
     }
   }, [location.pathname]);
 
+  // Load initial unread count
+  useEffect(() => {
+    const loadUnread = async () => {
+      // Count user messages from open conversations that admin hasn't seen
+      // Simple approach: count messages from last 24h with sender_type='user'
+      const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+      const { count } = await supabase
+        .from('chat_messages')
+        .select('*', { count: 'exact', head: true })
+        .eq('sender_type', 'user')
+        .gte('created_at', since);
+      if (count && count > 0 && locationRef.current !== '/admin/chat') {
+        setUnreadChat(count);
+      }
+    };
+    if (user && isAdmin) loadUnread();
+  }, [user, isAdmin]);
+
   // Realtime subscription for new chat messages
   useEffect(() => {
+    if (!user || !isAdmin) return;
+
     const channel = supabase
-      .channel('admin-chat-unread')
+      .channel('admin-chat-unread-v2')
       .on('postgres_changes', {
         event: 'INSERT',
         schema: 'public',
         table: 'chat_messages',
       }, (payload: any) => {
         if (payload.new?.sender_type === 'user') {
-          // Only increment if not currently on chat page
-          setUnreadChat(prev => {
-            if (window.location.pathname === '/admin/chat') return prev;
-            return prev + 1;
-          });
+          if (locationRef.current !== '/admin/chat') {
+            setUnreadChat(prev => prev + 1);
+          }
         }
       })
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
-  }, []);
+  }, [user, isAdmin]);
 
   useEffect(() => {
     if (!authLoading && !user) navigate('/login');
