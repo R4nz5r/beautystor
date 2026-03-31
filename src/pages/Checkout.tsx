@@ -7,11 +7,20 @@ import { Input } from '@/components/ui/input';
 import Header from '@/components/store/Header';
 import Footer from '@/components/store/Footer';
 import { toast } from 'sonner';
+import { Tag, X } from 'lucide-react';
 
 const Checkout = () => {
   const { items, subtotal, clearCart } = useCart();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+  const [couponCode, setCouponCode] = useState('');
+  const [couponLoading, setCouponLoading] = useState(false);
+  const [appliedCoupon, setAppliedCoupon] = useState<{
+    code: string;
+    discount_type: string;
+    discount_value: number;
+    id: string;
+  } | null>(null);
   const [form, setForm] = useState({
     name: '',
     phone: '',
@@ -21,7 +30,72 @@ const Checkout = () => {
   });
 
   const deliveryCharge = subtotal >= 500 ? 0 : 80;
-  const total = subtotal + deliveryCharge;
+
+  // Calculate coupon discount
+  const couponDiscount = appliedCoupon
+    ? appliedCoupon.discount_type === 'percentage'
+      ? Math.round(subtotal * appliedCoupon.discount_value / 100)
+      : appliedCoupon.discount_value
+    : 0;
+
+  const total = subtotal + deliveryCharge - couponDiscount;
+
+  const applyCoupon = async () => {
+    if (!couponCode.trim()) return;
+    setCouponLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('coupons')
+        .select('*')
+        .eq('code', couponCode.trim().toUpperCase())
+        .eq('is_active', true)
+        .maybeSingle();
+
+      if (error || !data) {
+        toast.error('কুপন কোড সঠিক নয়');
+        setCouponLoading(false);
+        return;
+      }
+
+      // Check expiry
+      if (data.expires_at && new Date(data.expires_at) < new Date()) {
+        toast.error('এই কুপনের মেয়াদ শেষ হয়ে গেছে');
+        setCouponLoading(false);
+        return;
+      }
+
+      // Check max uses
+      if (data.max_uses && data.used_count >= data.max_uses) {
+        toast.error('এই কুপন ব্যবহারের সীমা শেষ');
+        setCouponLoading(false);
+        return;
+      }
+
+      // Check min order
+      if (subtotal < data.min_order_amount) {
+        toast.error(`এই কুপনের জন্য ন্যূনতম ৳${Number(data.min_order_amount).toLocaleString('bn-BD')} অর্ডার করতে হবে`);
+        setCouponLoading(false);
+        return;
+      }
+
+      setAppliedCoupon({
+        code: data.code,
+        discount_type: data.discount_type,
+        discount_value: Number(data.discount_value),
+        id: data.id,
+      });
+      toast.success('কুপন প্রয়োগ করা হয়েছে!');
+    } catch {
+      toast.error('কুপন যাচাই করতে সমস্যা হয়েছে');
+    } finally {
+      setCouponLoading(false);
+    }
+  };
+
+  const removeCoupon = () => {
+    setAppliedCoupon(null);
+    setCouponCode('');
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -44,6 +118,7 @@ const Checkout = () => {
         status: 'pending',
         subtotal,
         delivery_charge: deliveryCharge,
+        discount: couponDiscount,
         total,
         payment_method: form.paymentMethod,
         payment_status: 'unpaid',
@@ -152,9 +227,46 @@ const Checkout = () => {
                     </div>
                   ))}
                 </div>
+
+                {/* Coupon Code */}
+                <div className="border-t pt-3 mb-3">
+                  {appliedCoupon ? (
+                    <div className="flex items-center justify-between bg-primary/10 rounded-md px-3 py-2">
+                      <div className="flex items-center gap-2 text-sm">
+                        <Tag className="h-4 w-4 text-primary" />
+                        <span className="font-medium text-primary">{appliedCoupon.code}</span>
+                        <span className="text-muted-foreground">
+                          (-৳{couponDiscount.toLocaleString('bn-BD')})
+                        </span>
+                      </div>
+                      <button type="button" onClick={removeCoupon} className="text-muted-foreground hover:text-destructive">
+                        <X className="h-4 w-4" />
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex gap-2">
+                      <Input
+                        value={couponCode}
+                        onChange={e => setCouponCode(e.target.value.toUpperCase())}
+                        placeholder="কুপন কোড"
+                        className="text-sm"
+                      />
+                      <Button type="button" variant="outline" size="sm" onClick={applyCoupon} disabled={couponLoading} className="shrink-0">
+                        {couponLoading ? '...' : 'প্রয়োগ'}
+                      </Button>
+                    </div>
+                  )}
+                </div>
+
                 <div className="space-y-2 text-sm border-t pt-3">
                   <div className="flex justify-between"><span className="text-muted-foreground">সাবটোটাল</span><span>৳{subtotal.toLocaleString('bn-BD')}</span></div>
                   <div className="flex justify-between"><span className="text-muted-foreground">ডেলিভারি</span><span>{deliveryCharge === 0 ? 'ফ্রি' : `৳${deliveryCharge}`}</span></div>
+                  {couponDiscount > 0 && (
+                    <div className="flex justify-between text-green-600">
+                      <span>কুপন ছাড়</span>
+                      <span>-৳{couponDiscount.toLocaleString('bn-BD')}</span>
+                    </div>
+                  )}
                   {form.paymentMethod === 'online' && (
                     <div className="flex justify-between text-primary">
                       <span>অগ্রিম পেমেন্ট</span>
