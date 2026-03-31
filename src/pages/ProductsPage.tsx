@@ -18,6 +18,7 @@ const ProductsPage = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [featuredOnly, setFeaturedOnly] = useState(false);
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
+  const [sortBy, setSortBy] = useState<string>('newest');
 
   useEffect(() => {
     supabase.from('categories').select('*').order('sort_order')
@@ -25,22 +26,25 @@ const ProductsPage = () => {
   }, []);
 
   useEffect(() => {
-    let query = supabase.from('products').select('*').eq('is_active', true).order('created_at', { ascending: false });
+    const orderCol = sortBy === 'price_asc' || sortBy === 'price_desc' ? 'price' : 'created_at';
+    const ascending = sortBy === 'price_asc' ? true : sortBy === 'price_desc' ? false : false;
+    let query = supabase.from('products').select('*').eq('is_active', true).order(orderCol, { ascending });
     if (selectedCat !== 'all') query = query.eq('category_id', selectedCat);
     if (featuredOnly) query = query.eq('featured', true);
     if (searchQuery.trim()) query = query.ilike('name', `%${searchQuery.trim()}%`);
     query.then(({ data }) => {
       if (data) setProducts(data.map(p => ({ ...p, images: typeof p.images === 'string' ? JSON.parse(p.images) : (p.images || []) })));
     });
-  }, [selectedCat, featuredOnly, searchQuery]);
+  }, [selectedCat, featuredOnly, searchQuery, sortBy]);
 
   const clearFilters = () => {
     setSelectedCat('all');
     setSearchQuery('');
     setFeaturedOnly(false);
+    setSortBy('newest');
   };
 
-  const hasActiveFilters = selectedCat !== 'all' || searchQuery.trim() || featuredOnly;
+  const hasActiveFilters = selectedCat !== 'all' || searchQuery.trim() || featuredOnly || sortBy !== 'newest';
 
   const FilterPanel = () => (
     <div className="space-y-6">
@@ -81,6 +85,24 @@ const ProductsPage = () => {
         </RadioGroup>
       </div>
 
+      {/* Sort */}
+      <div>
+        <Label className="text-sm font-medium mb-3 block">সর্ট করুন</Label>
+        <RadioGroup value={sortBy} onValueChange={setSortBy} className="space-y-2">
+          <div className="flex items-center gap-2">
+            <RadioGroupItem value="newest" id="sort-newest" />
+            <Label htmlFor="sort-newest" className="text-sm cursor-pointer">নতুন আগে</Label>
+          </div>
+          <div className="flex items-center gap-2">
+            <RadioGroupItem value="price_asc" id="sort-price-asc" />
+            <Label htmlFor="sort-price-asc" className="text-sm cursor-pointer">দাম: কম থেকে বেশি</Label>
+          </div>
+          <div className="flex items-center gap-2">
+            <RadioGroupItem value="price_desc" id="sort-price-desc" />
+            <Label htmlFor="sort-price-desc" className="text-sm cursor-pointer">দাম: বেশি থেকে কম</Label>
+          </div>
+        </RadioGroup>
+      </div>
       {/* Featured only */}
       <div>
         <div className="flex items-center gap-2">
