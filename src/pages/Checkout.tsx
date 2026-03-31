@@ -38,7 +38,32 @@ const Checkout = () => {
     paymentMethod: 'cod' as 'cod' | 'online',
   });
 
-  const deliveryCharge = subtotal >= 500 ? 0 : 80;
+  const sessionId = useRef(getSessionId());
+  const saveTimeout = useRef<ReturnType<typeof setTimeout>>();
+
+  const saveIncompleteOrder = useCallback((formData: typeof form) => {
+    if (saveTimeout.current) clearTimeout(saveTimeout.current);
+    saveTimeout.current = setTimeout(async () => {
+      const hasAnyData = formData.name || formData.phone || formData.address || formData.city;
+      if (!hasAnyData) return;
+      await supabase.from('incomplete_orders' as any).upsert({
+        session_id: sessionId.current,
+        customer_name: formData.name || null,
+        phone: formData.phone || null,
+        address: formData.address || null,
+        city: formData.city || null,
+        payment_method: formData.paymentMethod,
+        cart_items: items.map(i => ({ name: i.name, qty: i.quantity, price: i.sale_price || i.price })),
+        updated_at: new Date().toISOString(),
+      } as any, { onConflict: 'session_id' } as any);
+    }, 1500);
+  }, [items]);
+
+  useEffect(() => {
+    saveIncompleteOrder(form);
+  }, [form, saveIncompleteOrder]);
+
+
 
   // Calculate coupon discount
   const couponDiscount = appliedCoupon
