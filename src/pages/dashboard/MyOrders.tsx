@@ -4,13 +4,13 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Badge } from '@/components/ui/badge';
 
-const statusMap: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' }> = {
-  pending: { label: 'পেন্ডিং', variant: 'secondary' },
-  confirmed: { label: 'কনফার্মড', variant: 'default' },
-  processing: { label: 'প্রসেসিং', variant: 'default' },
-  shipped: { label: 'শিপড', variant: 'default' },
-  delivered: { label: 'ডেলিভারড', variant: 'default' },
-  cancelled: { label: 'বাতিল', variant: 'destructive' },
+const statusMap: Record<string, { label: string; color: string }> = {
+  pending: { label: 'পেন্ডিং', color: 'bg-yellow-100 text-yellow-800 border-yellow-200' },
+  confirmed: { label: 'কনফার্মড', color: 'bg-blue-100 text-blue-800 border-blue-200' },
+  processing: { label: 'প্রসেসিং', color: 'bg-purple-100 text-purple-800 border-purple-200' },
+  shipped: { label: 'শিপড', color: 'bg-cyan-100 text-cyan-800 border-cyan-200' },
+  delivered: { label: 'ডেলিভারড', color: 'bg-green-100 text-green-800 border-green-200' },
+  cancelled: { label: 'বাতিল', color: 'bg-red-100 text-red-800 border-red-200' },
 };
 
 const MyOrders = () => {
