@@ -131,12 +131,26 @@ const Checkout = () => {
     setCouponCode('');
   };
 
+  const [formErrors, setFormErrors] = useState<Record<string, string | null>>({});
+
+  const updateField = (field: string, value: string) => {
+    setForm(f => ({ ...f, [field]: value }));
+    setFormErrors(e => ({ ...e, [field]: null }));
+  };
+
+  const validateForm = () => {
+    const e = {
+      name: validateName(form.name),
+      phone: validatePhone(form.phone),
+      address: validateRequired(form.address, 'ঠিকানা', 5),
+    };
+    setFormErrors(e);
+    return !Object.values(e).some(Boolean);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.name || !form.phone || !form.address) {
-      toast.error('সকল তথ্য পূরণ করুন');
-      return;
-    }
+    if (!validateForm()) return;
     if (items.length === 0) {
       toast.error('কার্ট খালি');
       return;
