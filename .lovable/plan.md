@@ -1,26 +1,55 @@
 
 
-## Plan: Unread Badge on Chat Sidebar + Home Button in Admin
+## Plan: Add Form Validation Across All Forms
 
-### Changes
+### Summary
+Add proper input validation (inline error messages, phone/email format checks, length limits) to every form in the application using a lightweight helper approach — no new libraries needed.
 
-**1. Unread message count badge on the "লাইভ চ্যাট" sidebar link (`AdminLayout.tsx`)**
+### Validation Rules
+- **Name**: Required, 2-100 chars, no numbers
+- **Email**: Required, valid email format
+- **Phone**: Required where used, must match BD format `01XXXXXXXXX` (11 digits starting with 01)
+- **Password**: Min 6 chars
+- **Address**: Required where used, min 5 chars
+- **Comment/Message**: Required where used, min 3 chars
 
-- Add a Supabase Realtime subscription in `AdminLayout` that listens for new `chat_messages` where `sender_type = 'user'`.
-- Track total unread count in state. When on `/admin/chat`, reset it.
-- Render a red badge with the unread count next to the "লাইভ চ্যাট" nav item (or a dot if count is 0 but there are new messages).
-- The `links` array currently has a duplicate "সেটিংস" entry — will remove that too.
+### Files to Modify
 
-**2. Home button in sidebar footer (`AdminLayout.tsx`)**
+**1. Create `src/lib/validators.ts`** — shared validation helper functions:
+- `validateName(value)` → error string or null
+- `validateEmail(value)` → error string or null  
+- `validatePhone(value)` → error string or null
+- `validatePassword(value)` → error string or null
+- `validateRequired(value, fieldName)` → error string or null
 
-- Add a "হোম" button with a `Home` icon next to the logout button (or above it) that navigates to `/` (the storefront).
-- Visible in both expanded and collapsed sidebar states.
+**2. `src/pages/Register.tsx`** — validate name, email, phone (BD format), password before submit; show inline error messages per field
 
-### Files to modify
-- `src/pages/admin/AdminLayout.tsx` — add realtime unread tracking, home button, fix duplicate settings link
+**3. `src/pages/Login.tsx`** — validate email format and password not empty; show inline errors
 
-### Technical details
-- Subscribe to `postgres_changes` on `chat_messages` table for `INSERT` events, increment counter for `sender_type === 'user'`.
-- Use `useLocation` to detect when admin is on `/admin/chat` to auto-clear the badge.
-- Render the badge as a small red circle with count using existing `Badge` component or inline styled span.
+**4. `src/pages/ForgotPassword.tsx`** — validate email format
+
+**5. `src/pages/ResetPassword.tsx`** — validate password length and match
+
+**6. `src/pages/Checkout.tsx`** — validate name, phone (BD format), address required; show inline errors per field
+
+**7. `src/pages/dashboard/Profile.tsx`** — validate name, phone format
+
+**8. `src/pages/dashboard/Addresses.tsx`** — validate address required, phone format if provided
+
+**9. `src/components/store/ReviewForm.tsx`** — validate name (if not logged in), comment min length
+
+**10. `src/components/store/ChatWidget.tsx`** — validate name required, phone format
+
+### Approach
+- Add `errors` state object to each form component
+- Validate on submit; show red error text below each field
+- Phone regex: `/^01[3-9]\d{8}$/` for Bangladesh numbers
+- Email regex: standard format check
+- All error messages in Bengali to match existing UI
+
+### Technical Details
+- No new dependencies — pure helper functions
+- Error display: `<p className="text-xs text-destructive mt-1">{error}</p>` below each input
+- Clear field error on change (immediate feedback)
+- Admin forms (products, categories, banners, coupons) already use `required` attribute — skip those for now
 
