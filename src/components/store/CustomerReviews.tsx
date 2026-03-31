@@ -6,8 +6,8 @@ const CustomerReviews = () => {
   const [reviews, setReviews] = useState<any[]>([]);
 
   useEffect(() => {
-    supabase.from('reviews').select('*').eq('approved', true).eq('featured' as any, true).limit(6)
-      .then(({ data }) => { if (data) setReviews(data); });
+    (supabase.from('reviews').select('*').eq('approved', true) as any).eq('featured', true).limit(6)
+      .then(({ data }: any) => { if (data) setReviews(data); });
   }, []);
 
   if (!reviews.length) return null;
