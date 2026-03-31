@@ -18,6 +18,7 @@ const ProductsPage = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [featuredOnly, setFeaturedOnly] = useState(false);
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
+  const [sortBy, setSortBy] = useState<string>('newest');
 
   useEffect(() => {
     supabase.from('categories').select('*').order('sort_order')
