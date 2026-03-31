@@ -10,6 +10,13 @@ const statusSteps = ['pending', 'confirmed', 'processing', 'shipped', 'delivered
 const statusLabels: Record<string, string> = {
   pending: 'পেন্ডিং', confirmed: 'কনফার্মড', processing: 'প্রসেসিং', shipped: 'শিপড', delivered: 'ডেলিভারড', cancelled: 'বাতিল',
 };
+const stepColors: Record<string, string> = {
+  pending: 'bg-yellow-500',
+  confirmed: 'bg-blue-500',
+  processing: 'bg-purple-500',
+  shipped: 'bg-cyan-500',
+  delivered: 'bg-green-500',
+};
 
 const OrderDetail = () => {
   const { id } = useParams();
@@ -81,7 +88,7 @@ const OrderDetail = () => {
           <div className="flex items-center justify-between mb-2">
             {statusSteps.map((step, i) => (
               <div key={step} className="flex flex-col items-center flex-1">
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${i <= currentStep ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white ${i <= currentStep ? (stepColors[step] || 'bg-primary') : 'bg-muted text-muted-foreground'}`}>
                   {i + 1}
                 </div>
                 <span className="text-xs mt-1 text-center">{statusLabels[step]}</span>
