@@ -19,6 +19,7 @@ const Header = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const { totalItems } = useCart();
   const { user } = useAuth();
+  const { isAdmin } = useIsAdmin();
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
