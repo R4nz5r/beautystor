@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ShoppingBag, User, Search, Menu, X } from 'lucide-react';
 import { useCart } from '@/contexts/CartContext';
+import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 
 const navLinks = [
@@ -17,6 +18,7 @@ const Header = () => {
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const { totalItems } = useCart();
+  const { user } = useAuth();
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -52,7 +54,7 @@ const Header = () => {
           <button onClick={() => setSearchOpen(!searchOpen)} className="p-2 hover:bg-muted rounded-full transition-colors">
             <Search className="h-5 w-5" />
           </button>
-          <Link to="/login" className="p-2 hover:bg-muted rounded-full transition-colors">
+          <Link to={user ? "/dashboard" : "/login"} className="p-2 hover:bg-muted rounded-full transition-colors">
             <User className="h-5 w-5" />
           </Link>
           <Link to="/cart" className="p-2 hover:bg-muted rounded-full transition-colors relative">
