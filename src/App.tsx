@@ -90,11 +90,13 @@ const App = () => (
               <Route path="coupons" element={<AdminCoupons />} />
               <Route path="banners" element={<AdminBanners />} />
               <Route path="reviews" element={<AdminReviews />} />
+              <Route path="chat" element={<AdminChat />} />
               <Route path="settings" element={<AdminSettings />} />
             </Route>
 
             <Route path="*" element={<NotFound />} />
           </Routes>
+          <ChatWidget />
         </BrowserRouter>
       </CartProvider>
     </TooltipProvider>

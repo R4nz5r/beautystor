@@ -15,6 +15,8 @@ const links = [
   { to: '/admin/coupons', icon: Tag, label: 'কুপন' },
   { to: '/admin/banners', icon: Image, label: 'ব্যানার' },
   { to: '/admin/reviews', icon: Star, label: 'রিভিউ' },
+  { to: '/admin/chat', icon: MessageCircle, label: 'লাইভ চ্যাট' },
+  { to: '/admin/settings', icon: Settings, label: 'সেটিংস' },
   { to: '/admin/settings', icon: Settings, label: 'সেটিংস' },
 ];
 
