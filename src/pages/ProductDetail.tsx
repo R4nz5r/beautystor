@@ -32,6 +32,25 @@ const ProductDetail = () => {
       });
   }, [slug]);
 
+  useEffect(() => {
+    if (!user || !product) return;
+    supabase.from('wishlists').select('id').eq('user_id', user.id).eq('product_id', product.id).maybeSingle()
+      .then(({ data }) => { if (data) setWishlisted(true); });
+  }, [user, product?.id]);
+
+  const toggleWishlist = async () => {
+    if (!user) { toast.error('উইশলিস্টে যোগ করতে লগইন করুন'); return; }
+    if (wishlisted) {
+      await supabase.from('wishlists').delete().eq('user_id', user.id).eq('product_id', product.id);
+      setWishlisted(false);
+      toast.success('উইশলিস্ট থেকে সরানো হয়েছে');
+    } else {
+      await supabase.from('wishlists').insert({ user_id: user.id, product_id: product.id });
+      setWishlisted(true);
+      toast.success('উইশলিস্টে যোগ করা হয়েছে');
+    }
+  };
+
   if (!product) {
     return (
       <div className="min-h-screen flex flex-col">
