@@ -1,11 +1,11 @@
-import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useEffect, useState, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { Trash2 } from 'lucide-react';
+import { Trash2, Search } from 'lucide-react';
 import { toast } from 'sonner';
 
 const statusOptions = [
@@ -31,6 +31,7 @@ const AdminOrders = () => {
   const [orders, setOrders] = useState<any[]>([]);
   const [filter, setFilter] = useState('all');
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const load = async () => {
     let query = supabase.from('orders').select('*').order('created_at', { ascending: false });
@@ -40,6 +41,16 @@ const AdminOrders = () => {
   };
 
   useEffect(() => { load(); }, [filter]);
+
+  const filteredOrders = useMemo(() => {
+    if (!searchQuery.trim()) return orders;
+    const q = searchQuery.toLowerCase().trim();
+    return orders.filter(o =>
+      o.phone?.toLowerCase().includes(q) ||
+      o.id.toLowerCase().includes(q) ||
+      o.customer_name?.toLowerCase().includes(q)
+    );
+  }, [orders, searchQuery]);
 
   const updateStatus = async (id: string, status: string) => {
     await supabase.from('orders').update({ status: status as any, updated_at: new Date().toISOString() }).eq('id', id);
@@ -58,14 +69,25 @@ const AdminOrders = () => {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-3">
         <h1 className="text-2xl font-bold">অর্ডার ম্যানেজমেন্ট</h1>
-        <Select value={filter} onValueChange={setFilter}>
-          <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
-          <SelectContent>
-            {statusOptions.map(s => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
-          </SelectContent>
-        </Select>
+        <div className="flex items-center gap-3">
+          <div className="relative w-64">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="ফোন, নাম বা আইডি দিয়ে খুঁজুন..."
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              className="pl-9 h-9"
+            />
+          </div>
+          <Select value={filter} onValueChange={setFilter}>
+            <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {statusOptions.map(s => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       <div className="bg-card border rounded-lg overflow-hidden">
@@ -83,7 +105,7 @@ const AdminOrders = () => {
             </tr>
           </thead>
           <tbody className="divide-y">
-            {orders.map(o => (
+            {filteredOrders.map(o => (
               <tr key={o.id} className="hover:bg-muted/50">
                 <td className="p-3 font-mono text-xs">{o.id.slice(0, 8)}</td>
                 <td className="p-3">
@@ -117,7 +139,7 @@ const AdminOrders = () => {
             ))}
           </tbody>
         </table>
-        {orders.length === 0 && <p className="text-center py-8 text-muted-foreground">কোনো অর্ডার নেই</p>}
+        {filteredOrders.length === 0 && <p className="text-center py-8 text-muted-foreground">{searchQuery ? 'কোনো ফলাফল পাওয়া যায়নি' : 'কোনো অর্ডার নেই'}</p>}
       </div>
 
       <AlertDialog open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>

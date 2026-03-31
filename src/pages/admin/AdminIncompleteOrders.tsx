@@ -1,7 +1,8 @@
 import { useEffect, useState, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Trash2, Eye, ArrowRightCircle, ShoppingCart, CheckCircle, TrendingUp, MapPin, RefreshCw } from 'lucide-react';
+import { Trash2, Eye, ArrowRightCircle, ShoppingCart, CheckCircle, TrendingUp, MapPin, RefreshCw, Search, Pencil } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle
@@ -31,10 +32,13 @@ const AdminIncompleteOrders = () => {
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [detailOrder, setDetailOrder] = useState<IncompleteOrder | null>(null);
   const [convertingId, setConvertingId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isEditing, setIsEditing] = useState(false);
+  const [editForm, setEditForm] = useState({ customer_name: '', phone: '', address: '', city: '', payment_method: '' });
 
   const load = async () => {
     const [incRes, ordersRes] = await Promise.all([
-      supabase.from('incomplete_orders' as any).select('*').order('updated_at', { ascending: false }),
+      supabase.from('incomplete_orders').select('*').order('updated_at', { ascending: false }),
       supabase.from('orders').select('id, total').order('created_at', { ascending: false }),
     ]);
     if (incRes.data) setOrders(incRes.data as any);
@@ -46,13 +50,55 @@ const AdminIncompleteOrders = () => {
 
   useEffect(() => { load(); }, []);
 
+  const filteredOrders = useMemo(() => {
+    if (!searchQuery.trim()) return orders;
+    const q = searchQuery.toLowerCase().trim();
+    return orders.filter(o =>
+      o.phone?.toLowerCase().includes(q) ||
+      o.id.toLowerCase().includes(q) ||
+      o.customer_name?.toLowerCase().includes(q)
+    );
+  }, [orders, searchQuery]);
+
   const confirmDelete = async () => {
     if (!deleteId) return;
-    const { error } = await supabase.from('incomplete_orders' as any).delete().eq('id', deleteId);
+    const { error } = await supabase.from('incomplete_orders').delete().eq('id', deleteId);
     if (error) toast.error('ডিলিট করতে সমস্যা হয়েছে');
     else toast.success('ইনকমপ্লিট অর্ডার মুছে ফেলা হয়েছে');
     setDeleteId(null);
     load();
+  };
+
+  const openEdit = (order: IncompleteOrder) => {
+    setEditForm({
+      customer_name: order.customer_name || '',
+      phone: order.phone || '',
+      address: order.address || '',
+      city: order.city || '',
+      payment_method: order.payment_method || 'cod',
+    });
+    setIsEditing(true);
+  };
+
+  const saveEdit = async () => {
+    if (!detailOrder) return;
+    const { error } = await supabase.from('incomplete_orders').update({
+      customer_name: editForm.customer_name || null,
+      phone: editForm.phone || null,
+      address: editForm.address || null,
+      city: editForm.city || null,
+      payment_method: editForm.payment_method || null,
+      updated_at: new Date().toISOString(),
+    }).eq('id', detailOrder.id);
+
+    if (error) {
+      toast.error('আপডেট করতে সমস্যা হয়েছে');
+    } else {
+      toast.success('তথ্য আপডেট করা হয়েছে');
+      setIsEditing(false);
+      setDetailOrder({ ...detailOrder, ...editForm });
+      load();
+    }
   };
 
   const convertToOrder = async (order: IncompleteOrder) => {
@@ -84,7 +130,7 @@ const AdminIncompleteOrders = () => {
         await supabase.from('order_items').insert(orderItems);
       }
 
-      await supabase.from('incomplete_orders' as any).delete().eq('id', order.id);
+      await supabase.from('incomplete_orders').delete().eq('id', order.id);
       toast.success('অর্ডারে রূপান্তর করা হয়েছে!');
       setDetailOrder(null);
       load();
@@ -193,9 +239,20 @@ const AdminIncompleteOrders = () => {
         </div>
       )}
 
-      {/* Table */}
+      {/* Search + Table */}
       <div>
-        <h2 className="text-lg font-semibold mb-3">অসম্পূর্ণ চেকআউট লিস্ট</h2>
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-lg font-semibold">অসম্পূর্ণ চেকআউট লিস্ট</h2>
+          <div className="relative w-72">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="ফোন, নাম বা আইডি দিয়ে খুঁজুন..."
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              className="pl-9 h-9"
+            />
+          </div>
+        </div>
         <div className="bg-card border rounded-xl overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
@@ -211,11 +268,11 @@ const AdminIncompleteOrders = () => {
                 </tr>
               </thead>
               <tbody className="divide-y">
-                {orders.map(o => {
+                {filteredOrders.map(o => {
                   const completeness = getCompleteness(o);
                   const itemCount = o.cart_items?.length || 0;
                   return (
-                    <tr key={o.id} className="hover:bg-muted/30 cursor-pointer" onClick={() => setDetailOrder(o)}>
+                    <tr key={o.id} className="hover:bg-muted/30 cursor-pointer" onClick={() => { setDetailOrder(o); setIsEditing(false); }}>
                       <td className="p-3">
                         <p className="font-medium">{o.customer_name || <span className="text-muted-foreground">—</span>}</p>
                         {o.session_id && <p className="text-xs text-muted-foreground truncate max-w-[160px]">{o.session_id.slice(0, 20)}...</p>}
@@ -250,7 +307,7 @@ const AdminIncompleteOrders = () => {
                             <ArrowRightCircle className="h-3.5 w-3.5" />
                             অর্ডার করুন
                           </Button>
-                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setDetailOrder(o)}>
+                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => { setDetailOrder(o); setIsEditing(false); }}>
                             <Eye className="h-4 w-4" />
                           </Button>
                           <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => setDeleteId(o.id)}>
@@ -264,17 +321,25 @@ const AdminIncompleteOrders = () => {
               </tbody>
             </table>
           </div>
-          {orders.length === 0 && <p className="text-center py-10 text-muted-foreground">কোনো অসম্পূর্ণ অর্ডার নেই</p>}
+          {filteredOrders.length === 0 && <p className="text-center py-10 text-muted-foreground">{searchQuery ? 'কোনো ফলাফল পাওয়া যায়নি' : 'কোনো অসম্পূর্ণ অর্ডার নেই'}</p>}
         </div>
       </div>
 
-      {/* Detail Dialog */}
-      <Dialog open={!!detailOrder} onOpenChange={(open) => !open && setDetailOrder(null)}>
+      {/* Detail / Edit Dialog */}
+      <Dialog open={!!detailOrder} onOpenChange={(open) => { if (!open) { setDetailOrder(null); setIsEditing(false); } }}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>কাস্টমার বিস্তারিত</DialogTitle>
+            <div className="flex items-center justify-between">
+              <DialogTitle>{isEditing ? 'অর্ডার এডিট করুন' : 'কাস্টমার বিস্তারিত'}</DialogTitle>
+              {!isEditing && detailOrder && (
+                <Button variant="outline" size="sm" className="gap-1.5" onClick={() => openEdit(detailOrder)}>
+                  <Pencil className="h-3.5 w-3.5" />
+                  এডিট
+                </Button>
+              )}
+            </div>
           </DialogHeader>
-          {detailOrder && (
+          {detailOrder && !isEditing && (
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-3 text-sm">
                 <div>
@@ -323,11 +388,51 @@ const AdminIncompleteOrders = () => {
               </div>
             </div>
           )}
+          {detailOrder && isEditing && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs text-muted-foreground mb-1 block">নাম</label>
+                  <Input value={editForm.customer_name} onChange={e => setEditForm(f => ({ ...f, customer_name: e.target.value }))} />
+                </div>
+                <div>
+                  <label className="text-xs text-muted-foreground mb-1 block">ফোন</label>
+                  <Input value={editForm.phone} onChange={e => setEditForm(f => ({ ...f, phone: e.target.value }))} />
+                </div>
+                <div className="col-span-2">
+                  <label className="text-xs text-muted-foreground mb-1 block">ঠিকানা</label>
+                  <Input value={editForm.address} onChange={e => setEditForm(f => ({ ...f, address: e.target.value }))} />
+                </div>
+                <div>
+                  <label className="text-xs text-muted-foreground mb-1 block">শহর</label>
+                  <Input value={editForm.city} onChange={e => setEditForm(f => ({ ...f, city: e.target.value }))} />
+                </div>
+                <div>
+                  <label className="text-xs text-muted-foreground mb-1 block">পেমেন্ট মেথড</label>
+                  <select
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                    value={editForm.payment_method}
+                    onChange={e => setEditForm(f => ({ ...f, payment_method: e.target.value }))}
+                  >
+                    <option value="cod">ক্যাশ অন ডেলিভারি</option>
+                    <option value="online">অনলাইন</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          )}
           <DialogFooter className="gap-2">
-            <Button onClick={() => detailOrder && convertToOrder(detailOrder)} disabled={!!convertingId} className="gap-2">
-              <ArrowRightCircle className="h-4 w-4" />
-              অর্ডারে রূপান্তর করুন
-            </Button>
+            {isEditing ? (
+              <>
+                <Button variant="outline" onClick={() => setIsEditing(false)}>বাতিল</Button>
+                <Button onClick={saveEdit} className="gap-2">সেভ করুন</Button>
+              </>
+            ) : (
+              <Button onClick={() => detailOrder && convertToOrder(detailOrder)} disabled={!!convertingId} className="gap-2">
+                <ArrowRightCircle className="h-4 w-4" />
+                অর্ডারে রূপান্তর করুন
+              </Button>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>
