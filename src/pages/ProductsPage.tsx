@@ -84,11 +84,10 @@ const ProductsPage = () => {
       {/* Featured only */}
       <div>
         <div className="flex items-center gap-2">
-          <RadioGroupItem
-            value="featured"
+          <Checkbox
             id="featured-only"
             checked={featuredOnly}
-            onClick={() => setFeaturedOnly(!featuredOnly)}
+            onCheckedChange={(checked) => setFeaturedOnly(checked === true)}
           />
           <Label htmlFor="featured-only" className="text-sm cursor-pointer">শুধু ফিচার্ড প্রোডাক্ট</Label>
         </div>
