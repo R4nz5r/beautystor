@@ -18,7 +18,11 @@ const Login = () => {
     setLoading(true);
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) {
-      toast.error('লগইন ব্যর্থ হয়েছে। ইমেইল ও পাসওয়ার্ড চেক করুন।');
+      if (error.message.includes('Email not confirmed')) {
+        toast.error('ইমেইল ভেরিফাই করা হয়নি। আপনার ইনবক্স চেক করুন।');
+      } else {
+        toast.error('লগইন ব্যর্থ হয়েছে। ইমেইল ও পাসওয়ার্ড চেক করুন।');
+      }
     } else {
       toast.success('সফলভাবে লগইন হয়েছে!');
       navigate('/dashboard');
