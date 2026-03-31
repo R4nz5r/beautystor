@@ -79,7 +79,7 @@ const AdminOrders = () => {
               <th className="text-left p-3 font-medium">স্ট্যাটাস</th>
               <th className="text-left p-3 font-medium">তারিখ</th>
               <th className="text-left p-3 font-medium">অ্যাকশন</th>
-              <th className="text-left p-3 font-medium">ডিলিট করুন</th>
+              <th className="text-left p-3 font-medium">ডিলিট</th>
             </tr>
           </thead>
           <tbody className="divide-y">
@@ -109,9 +109,8 @@ const AdminOrders = () => {
                   </Select>
                 </td>
                 <td className="p-3">
-                  <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive gap-1" onClick={() => setDeleteId(o.id)}>
+                  <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => setDeleteId(o.id)}>
                     <Trash2 className="h-4 w-4" />
-                    ডিলিট করুন
                   </Button>
                 </td>
               </tr>
