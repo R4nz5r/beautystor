@@ -6,15 +6,16 @@ import { Input } from '@/components/ui/input';
 import Header from '@/components/store/Header';
 import Footer from '@/components/store/Footer';
 import { toast } from 'sonner';
+import { validatePassword } from '@/lib/validators';
 
 const ResetPassword = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [password, setPassword] = useState('');
   const [confirmed, setConfirmed] = useState('');
+  const [errors, setErrors] = useState<Record<string, string | null>>({});
 
   useEffect(() => {
-    // Check for recovery token in URL
     const hash = window.location.hash;
     if (!hash.includes('type=recovery')) {
       toast.error('অবৈধ রিসেট লিংক');
@@ -22,10 +23,18 @@ const ResetPassword = () => {
     }
   }, [navigate]);
 
+  const validate = () => {
+    const e: Record<string, string | null> = {
+      password: validatePassword(password),
+      confirmed: !confirmed ? 'পাসওয়ার্ড নিশ্চিত করুন' : password !== confirmed ? 'পাসওয়ার্ড মিলছে না' : null,
+    };
+    setErrors(e);
+    return !Object.values(e).some(Boolean);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (password !== confirmed) { toast.error('পাসওয়ার্ড মিলছে না'); return; }
-    if (password.length < 6) { toast.error('পাসওয়ার্ড কমপক্ষে ৬ অক্ষরের হতে হবে'); return; }
+    if (!validate()) return;
     setLoading(true);
     const { error } = await supabase.auth.updateUser({ password });
     if (error) toast.error(error.message);
@@ -42,11 +51,13 @@ const ResetPassword = () => {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="text-sm font-medium mb-1 block">নতুন পাসওয়ার্ড</label>
-              <Input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="কমপক্ষে ৬ অক্ষর" required />
+              <Input type="password" value={password} onChange={e => { setPassword(e.target.value); setErrors(er => ({ ...er, password: null })); }} placeholder="কমপক্ষে ৬ অক্ষর" />
+              {errors.password && <p className="text-xs text-destructive mt-1">{errors.password}</p>}
             </div>
             <div>
               <label className="text-sm font-medium mb-1 block">পাসওয়ার্ড নিশ্চিত করুন</label>
-              <Input type="password" value={confirmed} onChange={e => setConfirmed(e.target.value)} placeholder="আবার পাসওয়ার্ড দিন" required />
+              <Input type="password" value={confirmed} onChange={e => { setConfirmed(e.target.value); setErrors(er => ({ ...er, confirmed: null })); }} placeholder="আবার পাসওয়ার্ড দিন" />
+              {errors.confirmed && <p className="text-xs text-destructive mt-1">{errors.confirmed}</p>}
             </div>
             <Button type="submit" className="w-full" disabled={loading}>
               {loading ? 'আপডেট হচ্ছে...' : 'পাসওয়ার্ড আপডেট করুন'}

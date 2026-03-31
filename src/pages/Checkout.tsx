@@ -8,6 +8,7 @@ import Header from '@/components/store/Header';
 import Footer from '@/components/store/Footer';
 import { toast } from 'sonner';
 import { Tag, X } from 'lucide-react';
+import { validateName, validatePhone, validateRequired } from '@/lib/validators';
 
 const getSessionId = () => {
   let id = localStorage.getItem('checkout_session_id');
@@ -130,12 +131,26 @@ const Checkout = () => {
     setCouponCode('');
   };
 
+  const [formErrors, setFormErrors] = useState<Record<string, string | null>>({});
+
+  const updateField = (field: string, value: string) => {
+    setForm(f => ({ ...f, [field]: value }));
+    setFormErrors(e => ({ ...e, [field]: null }));
+  };
+
+  const validateForm = () => {
+    const e = {
+      name: validateName(form.name),
+      phone: validatePhone(form.phone),
+      address: validateRequired(form.address, 'ঠিকানা', 5),
+    };
+    setFormErrors(e);
+    return !Object.values(e).some(Boolean);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.name || !form.phone || !form.address) {
-      toast.error('সকল তথ্য পূরণ করুন');
-      return;
-    }
+    if (!validateForm()) return;
     if (items.length === 0) {
       toast.error('কার্ট খালি');
       return;
@@ -215,19 +230,22 @@ const Checkout = () => {
                   <h2 className="font-bold text-lg">শিপিং তথ্য</h2>
                   <div>
                     <label className="text-sm font-medium mb-1 block">নাম *</label>
-                    <Input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="আপনার নাম" required />
+                    <Input value={form.name} onChange={e => updateField('name', e.target.value)} placeholder="আপনার নাম" />
+                    {formErrors.name && <p className="text-xs text-destructive mt-1">{formErrors.name}</p>}
                   </div>
                   <div>
                     <label className="text-sm font-medium mb-1 block">ফোন নম্বর *</label>
-                    <Input value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} placeholder="01XXXXXXXXX" required />
+                    <Input value={form.phone} onChange={e => updateField('phone', e.target.value)} placeholder="01XXXXXXXXX" />
+                    {formErrors.phone && <p className="text-xs text-destructive mt-1">{formErrors.phone}</p>}
                   </div>
                   <div>
                     <label className="text-sm font-medium mb-1 block">ঠিকানা *</label>
-                    <Input value={form.address} onChange={e => setForm(f => ({ ...f, address: e.target.value }))} placeholder="বিস্তারিত ঠিকানা" required />
+                    <Input value={form.address} onChange={e => updateField('address', e.target.value)} placeholder="বিস্তারিত ঠিকানা" />
+                    {formErrors.address && <p className="text-xs text-destructive mt-1">{formErrors.address}</p>}
                   </div>
                   <div>
                     <label className="text-sm font-medium mb-1 block">শহর</label>
-                    <Input value={form.city} onChange={e => setForm(f => ({ ...f, city: e.target.value }))} placeholder="ঢাকা" />
+                    <Input value={form.city} onChange={e => updateField('city', e.target.value)} placeholder="ঢাকা" />
                   </div>
                 </div>
 

@@ -5,12 +5,14 @@ import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
+import { validateRequired, validatePhone } from '@/lib/validators';
 
 const Addresses = () => {
   const { user } = useAuth();
   const [addresses, setAddresses] = useState<any[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ label: 'বাড়ি', full_address: '', phone: '' });
+  const [errors, setErrors] = useState<Record<string, string | null>>({});
 
   const load = async () => {
     if (!user) return;
@@ -20,12 +22,27 @@ const Addresses = () => {
 
   useEffect(() => { load(); }, [user]);
 
+  const updateField = (field: string, value: string) => {
+    setForm(f => ({ ...f, [field]: value }));
+    setErrors(e => ({ ...e, [field]: null }));
+  };
+
+  const validate = () => {
+    const e = {
+      full_address: validateRequired(form.full_address, 'ঠিকানা', 5),
+      phone: validatePhone(form.phone, false),
+    };
+    setErrors(e);
+    return !Object.values(e).some(Boolean);
+  };
+
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user || !form.full_address) return;
+    if (!user) return;
+    if (!validate()) return;
     const { error } = await supabase.from('addresses').insert({ ...form, user_id: user.id });
     if (error) toast.error('ঠিকানা যোগ করতে সমস্যা হয়েছে');
-    else { toast.success('ঠিকানা যোগ হয়েছে'); setShowForm(false); setForm({ label: 'বাড়ি', full_address: '', phone: '' }); load(); }
+    else { toast.success('ঠিকানা যোগ হয়েছে'); setShowForm(false); setForm({ label: 'বাড়ি', full_address: '', phone: '' }); setErrors({}); load(); }
   };
 
   const handleDelete = async (id: string) => {
@@ -43,12 +60,18 @@ const Addresses = () => {
 
       {showForm && (
         <form onSubmit={handleAdd} className="border rounded-lg p-4 mb-4 space-y-3">
-          <Input value={form.label} onChange={e => setForm(f => ({ ...f, label: e.target.value }))} placeholder="লেবেল (বাড়ি/অফিস)" />
-          <Input value={form.full_address} onChange={e => setForm(f => ({ ...f, full_address: e.target.value }))} placeholder="বিস্তারিত ঠিকানা" required />
-          <Input value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} placeholder="ফোন নম্বর" />
+          <Input value={form.label} onChange={e => updateField('label', e.target.value)} placeholder="লেবেল (বাড়ি/অফিস)" />
+          <div>
+            <Input value={form.full_address} onChange={e => updateField('full_address', e.target.value)} placeholder="বিস্তারিত ঠিকানা" />
+            {errors.full_address && <p className="text-xs text-destructive mt-1">{errors.full_address}</p>}
+          </div>
+          <div>
+            <Input value={form.phone} onChange={e => updateField('phone', e.target.value)} placeholder="ফোন নম্বর" />
+            {errors.phone && <p className="text-xs text-destructive mt-1">{errors.phone}</p>}
+          </div>
           <div className="flex gap-2">
             <Button type="submit" size="sm">সেভ করুন</Button>
-            <Button type="button" size="sm" variant="outline" onClick={() => setShowForm(false)}>বাতিল</Button>
+            <Button type="button" size="sm" variant="outline" onClick={() => { setShowForm(false); setErrors({}); }}>বাতিল</Button>
           </div>
         </form>
       )}

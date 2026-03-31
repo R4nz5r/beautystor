@@ -6,15 +6,33 @@ import { Input } from '@/components/ui/input';
 import Header from '@/components/store/Header';
 import Footer from '@/components/store/Footer';
 import { toast } from 'sonner';
+import { validateName, validateEmail, validatePhone, validatePassword } from '@/lib/validators';
 
 const Register = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({ name: '', email: '', password: '', phone: '' });
+  const [errors, setErrors] = useState<Record<string, string | null>>({});
+
+  const updateField = (field: string, value: string) => {
+    setForm(f => ({ ...f, [field]: value }));
+    setErrors(e => ({ ...e, [field]: null }));
+  };
+
+  const validate = () => {
+    const e = {
+      name: validateName(form.name),
+      email: validateEmail(form.email),
+      phone: validatePhone(form.phone),
+      password: validatePassword(form.password),
+    };
+    setErrors(e);
+    return !Object.values(e).some(Boolean);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (form.password.length < 6) { toast.error('পাসওয়ার্ড কমপক্ষে ৬ অক্ষরের হতে হবে'); return; }
+    if (!validate()) return;
     setLoading(true);
     const { error } = await supabase.auth.signUp({
       email: form.email,
@@ -43,19 +61,23 @@ const Register = () => {
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <label className="text-sm font-medium mb-1 block">নাম</label>
-                <Input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="আপনার নাম" required />
+                <Input value={form.name} onChange={e => updateField('name', e.target.value)} placeholder="আপনার নাম" />
+                {errors.name && <p className="text-xs text-destructive mt-1">{errors.name}</p>}
               </div>
               <div>
                 <label className="text-sm font-medium mb-1 block">ফোন নম্বর</label>
-                <Input value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} placeholder="01XXXXXXXXX" />
+                <Input value={form.phone} onChange={e => updateField('phone', e.target.value)} placeholder="01XXXXXXXXX" />
+                {errors.phone && <p className="text-xs text-destructive mt-1">{errors.phone}</p>}
               </div>
               <div>
                 <label className="text-sm font-medium mb-1 block">ইমেইল</label>
-                <Input type="email" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} placeholder="আপনার ইমেইল" required />
+                <Input type="email" value={form.email} onChange={e => updateField('email', e.target.value)} placeholder="আপনার ইমেইল" />
+                {errors.email && <p className="text-xs text-destructive mt-1">{errors.email}</p>}
               </div>
               <div>
                 <label className="text-sm font-medium mb-1 block">পাসওয়ার্ড</label>
-                <Input type="password" value={form.password} onChange={e => setForm(f => ({ ...f, password: e.target.value }))} placeholder="কমপক্ষে ৬ অক্ষর" required />
+                <Input type="password" value={form.password} onChange={e => updateField('password', e.target.value)} placeholder="কমপক্ষে ৬ অক্ষর" />
+                {errors.password && <p className="text-xs text-destructive mt-1">{errors.password}</p>}
               </div>
               <Button type="submit" className="w-full" disabled={loading}>
                 {loading ? 'রেজিস্টার হচ্ছে...' : 'রেজিস্টার করুন'}
