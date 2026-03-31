@@ -88,7 +88,7 @@ const OrderDetail = () => {
           <div className="flex items-center justify-between mb-2">
             {statusSteps.map((step, i) => (
               <div key={step} className="flex flex-col items-center flex-1">
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${i <= currentStep ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white ${i <= currentStep ? (stepColors[step] || 'bg-primary') : 'bg-muted text-muted-foreground'}`}>
                   {i + 1}
                 </div>
                 <span className="text-xs mt-1 text-center">{statusLabels[step]}</span>
