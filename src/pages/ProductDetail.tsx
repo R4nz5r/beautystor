@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { Minus, Plus, ShoppingBag, ArrowLeft, Star, Heart } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useCart } from '@/contexts/CartContext';
@@ -11,6 +11,7 @@ import { toast } from 'sonner';
 
 const ProductDetail = () => {
   const { slug } = useParams();
+  const navigate = useNavigate();
   const [product, setProduct] = useState<any>(null);
   const [reviews, setReviews] = useState<any[]>([]);
   const [qty, setQty] = useState(1);
@@ -66,15 +67,22 @@ const ProductDetail = () => {
   const image = product.images?.[selectedImage] || '/placeholder.svg';
   const hasDiscount = product.sale_price && product.sale_price < product.price;
 
+  const getCartItem = () => ({
+    id: product.id,
+    name: product.name,
+    price: product.price,
+    sale_price: product.sale_price,
+    image: product.images?.[0] || '/placeholder.svg',
+    slug: product.slug,
+  });
+
   const handleAddToCart = () => {
-    addToCart({
-      id: product.id,
-      name: product.name,
-      price: product.price,
-      sale_price: product.sale_price,
-      image: product.images?.[0] || '/placeholder.svg',
-      slug: product.slug,
-    }, qty);
+    addToCart(getCartItem(), qty);
+  };
+
+  const handleBuyNow = () => {
+    addToCart(getCartItem(), qty);
+    navigate('/checkout');
   };
 
   return (
@@ -137,8 +145,8 @@ const ProductDetail = () => {
                 <Button onClick={handleAddToCart} className="flex-1 gap-2">
                   <ShoppingBag className="h-4 w-4" /> কার্টে যোগ করুন
                 </Button>
-                <Button variant="secondary" asChild>
-                  <Link to="/checkout">এখনই কিনুন</Link>
+                <Button variant="secondary" onClick={handleBuyNow}>
+                  এখনই কিনুন
                 </Button>
                 <Button variant="outline" size="icon" onClick={toggleWishlist} className="shrink-0">
                   <Heart className={`h-5 w-5 ${wishlisted ? 'fill-destructive text-destructive' : ''}`} />
