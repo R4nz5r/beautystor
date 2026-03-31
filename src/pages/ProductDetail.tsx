@@ -145,8 +145,8 @@ const ProductDetail = () => {
                 <Button onClick={handleAddToCart} className="flex-1 gap-2">
                   <ShoppingBag className="h-4 w-4" /> কার্টে যোগ করুন
                 </Button>
-                <Button variant="secondary" asChild>
-                  <Link to="/checkout">এখনই কিনুন</Link>
+                <Button variant="secondary" onClick={handleBuyNow}>
+                  এখনই কিনুন
                 </Button>
                 <Button variant="outline" size="icon" onClick={toggleWishlist} className="shrink-0">
                   <Heart className={`h-5 w-5 ${wishlisted ? 'fill-destructive text-destructive' : ''}`} />
