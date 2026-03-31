@@ -1,38 +1,19 @@
 
 
-## Problem: Race condition in `useIsAdmin` causes premature redirect
+## Plan: Show only order name in both Admin Orders and Admin Customers
 
-**Root cause:** In `useIsAdmin`, when the hook first mounts, `user` is `null` (from its own `useAuth` instance). The effect runs immediately, sets `loading = false` and `isAdmin = false`. 
+The user chose to use the **order name** (from `orders.customer_name`) as the single name source across admin pages.
 
-Meanwhile, in `AdminLayout`, the *other* `useAuth` instance resolves the user. Now we have: `authLoading = false`, `roleLoading = false` (stale from the null-user path), `user = truthy`, `isAdmin = false` → the redirect to `/` fires *before* the RPC call ever runs.
+### Changes
 
-When `user` later updates inside `useIsAdmin`, it does call the RPC, but by then the redirect already happened.
+**1. `src/pages/admin/AdminCustomers.tsx`**
+- Remove the "প্রোফাইল নাম" column
+- Keep only one "নাম" column showing `order_name` (from orders table)
+- If no order exists, show "অর্ডার নেই"
 
-## Fix
+**2. `src/pages/admin/AdminOrders.tsx`**
+- No changes needed — already shows `orders.customer_name`
 
-**File: `src/hooks/useAuth.tsx`** — In the `useIsAdmin` hook:
-
-1. Initialize `loading` as `true`
-2. When `user` changes from null to a value, set `loading = true` *before* the async RPC call
-3. Only set `loading = false` after the RPC resolves or when user is confirmed null and auth is done
-
-```typescript
-export const useIsAdmin = () => {
-  const { user, loading: authLoading } = useAuth();
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    if (authLoading) return; // wait for auth to settle
-    if (!user) { setIsAdmin(false); setLoading(false); return; }
-    setLoading(true); // reset loading when user changes
-    supabase.rpc('has_role', { _user_id: user.id, _role: 'admin' })
-      .then(({ data }) => { setIsAdmin(!!data); setLoading(false); });
-  }, [user, authLoading]);
-
-  return { isAdmin, loading };
-};
-```
-
-This ensures `roleLoading` stays `true` until the RPC call completes, preventing the premature redirect in `AdminLayout`.
+### Summary
+Single file change: simplify the customers table to show only the order-sourced name instead of both profile and order names.
 
