@@ -46,7 +46,7 @@ const Checkout = () => {
     saveTimeout.current = setTimeout(async () => {
       const hasAnyData = formData.name || formData.phone || formData.address || formData.city;
       if (!hasAnyData) return;
-      await supabase.from('incomplete_orders' as any).upsert({
+      await supabase.from('incomplete_orders').upsert({
         session_id: sessionId.current,
         customer_name: formData.name || null,
         phone: formData.phone || null,
@@ -55,7 +55,7 @@ const Checkout = () => {
         payment_method: formData.paymentMethod,
         cart_items: items.map(i => ({ name: i.name, qty: i.quantity, price: i.sale_price || i.price })),
         updated_at: new Date().toISOString(),
-      } as any, { onConflict: 'session_id' } as any);
+      }, { onConflict: 'session_id' });
     }, 1500);
   }, [items]);
 
@@ -173,7 +173,7 @@ const Checkout = () => {
       await supabase.from('order_items').insert(orderItems);
 
       // Remove incomplete order on success
-      await supabase.from('incomplete_orders' as any).delete().eq('session_id', sessionId.current);
+      await supabase.from('incomplete_orders').delete().eq('session_id', sessionId.current);
       localStorage.removeItem('checkout_session_id');
 
       clearCart();
