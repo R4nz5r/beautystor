@@ -38,6 +38,7 @@ import AdminBanners from "./pages/admin/AdminBanners";
 import AdminReviews from "./pages/admin/AdminReviews";
 import AdminSettings from "./pages/admin/AdminSettings";
 import AdminCoupons from "./pages/admin/AdminCoupons";
+import AdminIncompleteOrders from "./pages/admin/AdminIncompleteOrders";
 
 const queryClient = new QueryClient();
 
