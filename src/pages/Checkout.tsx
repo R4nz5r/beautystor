@@ -172,6 +172,10 @@ const Checkout = () => {
 
       await supabase.from('order_items').insert(orderItems);
 
+      // Remove incomplete order on success
+      await supabase.from('incomplete_orders' as any).delete().eq('session_id', sessionId.current);
+      localStorage.removeItem('checkout_session_id');
+
       clearCart();
       toast.success('অর্ডার সফলভাবে সম্পন্ন হয়েছে!');
       navigate(`/order-confirmation/${order.id}`);
