@@ -10,6 +10,13 @@ const statusSteps = ['pending', 'confirmed', 'processing', 'shipped', 'delivered
 const statusLabels: Record<string, string> = {
   pending: 'পেন্ডিং', confirmed: 'কনফার্মড', processing: 'প্রসেসিং', shipped: 'শিপড', delivered: 'ডেলিভারড', cancelled: 'বাতিল',
 };
+const stepColors: Record<string, string> = {
+  pending: 'bg-yellow-500',
+  confirmed: 'bg-blue-500',
+  processing: 'bg-purple-500',
+  shipped: 'bg-cyan-500',
+  delivered: 'bg-green-500',
+};
 
 const OrderDetail = () => {
   const { id } = useParams();
