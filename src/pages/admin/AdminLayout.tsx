@@ -10,6 +10,7 @@ const links = [
   { to: '/admin/products', icon: Package, label: 'প্রোডাক্ট' },
   { to: '/admin/categories', icon: Package, label: 'ক্যাটাগরি' },
   { to: '/admin/customers', icon: Users, label: 'কাস্টমার' },
+  { to: '/admin/coupons', icon: Tag, label: 'কুপন' },
   { to: '/admin/banners', icon: Image, label: 'ব্যানার' },
   { to: '/admin/reviews', icon: Star, label: 'রিভিউ' },
   { to: '/admin/settings', icon: Settings, label: 'সেটিংস' },
