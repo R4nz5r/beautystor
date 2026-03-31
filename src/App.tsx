@@ -40,6 +40,8 @@ import AdminSettings from "./pages/admin/AdminSettings";
 import AdminCoupons from "./pages/admin/AdminCoupons";
 import AdminIncompleteOrders from "./pages/admin/AdminIncompleteOrders";
 import AdminRecoveryAnalytics from "./pages/admin/AdminRecoveryAnalytics";
+import AdminChat from "./pages/admin/AdminChat";
+import ChatWidget from "./components/store/ChatWidget";
 
 const queryClient = new QueryClient();
 
