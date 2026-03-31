@@ -110,6 +110,7 @@ export type Database = {
           updated_at: string
           visitor_email: string | null
           visitor_name: string
+          visitor_phone: string | null
         }
         Insert: {
           created_at?: string
@@ -119,6 +120,7 @@ export type Database = {
           updated_at?: string
           visitor_email?: string | null
           visitor_name: string
+          visitor_phone?: string | null
         }
         Update: {
           created_at?: string
@@ -128,6 +130,7 @@ export type Database = {
           updated_at?: string
           visitor_email?: string | null
           visitor_name?: string
+          visitor_phone?: string | null
         }
         Relationships: []
       }
