@@ -6,6 +6,7 @@ import Header from '@/components/store/Header';
 import Footer from '@/components/store/Footer';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
@@ -83,11 +84,10 @@ const ProductsPage = () => {
       {/* Featured only */}
       <div>
         <div className="flex items-center gap-2">
-          <RadioGroupItem
-            value="featured"
+          <Checkbox
             id="featured-only"
             checked={featuredOnly}
-            onClick={() => setFeaturedOnly(!featuredOnly)}
+            onCheckedChange={(checked) => setFeaturedOnly(checked === true)}
           />
           <Label htmlFor="featured-only" className="text-sm cursor-pointer">শুধু ফিচার্ড প্রোডাক্ট</Label>
         </div>
