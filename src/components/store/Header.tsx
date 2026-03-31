@@ -1,9 +1,11 @@
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { ShoppingBag, User, Search, Menu, X, Shield } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { ShoppingBag, User, Search, Menu, X, Shield, LogOut } from 'lucide-react';
 import { useCart } from '@/contexts/CartContext';
 import { useAuth, useIsAdmin } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
+import { toast } from 'sonner';
 
 const navLinks = [
   { label: 'হোম', href: '/' },
@@ -17,9 +19,23 @@ const Header = () => {
   const [menuOpen, setMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [profileName, setProfileName] = useState<string | null>(null);
   const { totalItems } = useCart();
   const { user } = useAuth();
   const { isAdmin } = useIsAdmin();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!user) { setProfileName(null); return; }
+    supabase.from('profiles').select('name').eq('user_id', user.id).maybeSingle()
+      .then(({ data }) => setProfileName(data?.name || user.email?.split('@')[0] || null));
+  }, [user]);
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    toast.success('লগআউট সফল');
+    navigate('/');
+  };
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -60,9 +76,21 @@ const Header = () => {
               <Shield className="h-5 w-5" />
             </Link>
           )}
-          <Link to={user ? "/dashboard" : "/login"} className="p-2 hover:bg-muted rounded-full transition-colors">
-            <User className="h-5 w-5" />
-          </Link>
+          {user ? (
+            <div className="flex items-center gap-1">
+              <Link to="/dashboard" className="flex items-center gap-1.5 px-3 py-1.5 hover:bg-muted rounded-full transition-colors text-sm font-medium text-foreground">
+                <User className="h-4 w-4" />
+                <span className="hidden sm:inline max-w-[100px] truncate">{profileName}</span>
+              </Link>
+              <button onClick={handleLogout} className="p-2 hover:bg-destructive/10 rounded-full transition-colors text-destructive" title="লগআউট">
+                <LogOut className="h-4 w-4" />
+              </button>
+            </div>
+          ) : (
+            <Link to="/login" className="p-2 hover:bg-muted rounded-full transition-colors">
+              <User className="h-5 w-5" />
+            </Link>
+          )}
           <Link to="/cart" className="p-2 hover:bg-muted rounded-full transition-colors relative">
             <ShoppingBag className="h-5 w-5" />
             {totalItems > 0 && (
