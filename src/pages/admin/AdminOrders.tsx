@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -29,6 +30,7 @@ const statusColors: Record<string, string> = {
 const AdminOrders = () => {
   const [orders, setOrders] = useState<any[]>([]);
   const [filter, setFilter] = useState('all');
+  const [deleteId, setDeleteId] = useState<string | null>(null);
 
   const load = async () => {
     let query = supabase.from('orders').select('*').order('created_at', { ascending: false });
@@ -44,12 +46,13 @@ const AdminOrders = () => {
     load();
   };
 
-  const deleteOrder = async (id: string) => {
-    if (!confirm('এই অর্ডারটি মুছে ফেলতে চান?')) return;
-    await supabase.from('order_items').delete().eq('order_id', id);
-    const { error } = await supabase.from('orders').delete().eq('id', id);
+  const confirmDelete = async () => {
+    if (!deleteId) return;
+    await supabase.from('order_items').delete().eq('order_id', deleteId);
+    const { error } = await supabase.from('orders').delete().eq('id', deleteId);
     if (error) toast.error('ডিলিট করতে সমস্যা হয়েছে');
     else toast.success('অর্ডার মুছে ফেলা হয়েছে');
+    setDeleteId(null);
     load();
   };
 
@@ -103,7 +106,7 @@ const AdminOrders = () => {
                       ))}
                     </SelectContent>
                   </Select>
-                  <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => deleteOrder(o.id)}>
+                  <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => setDeleteId(o.id)}>
                     <Trash2 className="h-4 w-4" />
                   </Button>
                 </td>
@@ -113,6 +116,23 @@ const AdminOrders = () => {
         </table>
         {orders.length === 0 && <p className="text-center py-8 text-muted-foreground">কোনো অর্ডার নেই</p>}
       </div>
+
+      <AlertDialog open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>অর্ডার ডিলিট করুন</AlertDialogTitle>
+            <AlertDialogDescription>
+              এই অর্ডারটি স্থায়ীভাবে মুছে ফেলা হবে। এই কাজটি পূর্বাবস্থায় ফেরানো যাবে না।
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>বাতিল</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              ডিলিট করুন
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
