@@ -1,19 +1,22 @@
 
 
-## Plan: Show only order name in both Admin Orders and Admin Customers
+## Plan: Make Admin Customers page useful with aggregated order data
 
-The user chose to use the **order name** (from `orders.customer_name`) as the single name source across admin pages.
+Instead of querying `profiles`, query the `orders` table directly and aggregate by `customer_name` + `phone` to show real customer data.
 
-### Changes
+### Changes: `src/pages/admin/AdminCustomers.tsx`
 
-**1. `src/pages/admin/AdminCustomers.tsx`**
-- Remove the "প্রোফাইল নাম" column
-- Keep only one "নাম" column showing `order_name` (from orders table)
-- If no order exists, show "অর্ডার নেই"
+- Query all orders from Supabase
+- Group by `customer_name + phone` combination to identify unique customers
+- For each unique customer, compute:
+  - **Total orders count**
+  - **Total amount spent** (sum of `total`)
+  - **Last order date**
+  - **Phone** (from orders)
+  - **Address** (from `shipping_address` JSON field)
+- Sort by total spent descending
+- Update table columns: নাম, ফোন, ঠিকানা, মোট অর্ডার, মোট খরচ, সর্বশেষ অর্ডার
+- Add search/filter by customer name or phone
 
-**2. `src/pages/admin/AdminOrders.tsx`**
-- No changes needed — already shows `orders.customer_name`
-
-### Summary
-Single file change: simplify the customers table to show only the order-sourced name instead of both profile and order names.
+Single file change, no database modifications needed.
 
