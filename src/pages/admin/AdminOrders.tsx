@@ -3,6 +3,9 @@ import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Button } from '@/components/ui/button';
+import { Trash2 } from 'lucide-react';
+import { toast } from 'sonner';
 
 const statusOptions = [
   { value: 'all', label: 'সব' },
@@ -38,6 +41,15 @@ const AdminOrders = () => {
 
   const updateStatus = async (id: string, status: string) => {
     await supabase.from('orders').update({ status: status as any, updated_at: new Date().toISOString() }).eq('id', id);
+    load();
+  };
+
+  const deleteOrder = async (id: string) => {
+    if (!confirm('এই অর্ডারটি মুছে ফেলতে চান?')) return;
+    await supabase.from('order_items').delete().eq('order_id', id);
+    const { error } = await supabase.from('orders').delete().eq('id', id);
+    if (error) toast.error('ডিলিট করতে সমস্যা হয়েছে');
+    else toast.success('অর্ডার মুছে ফেলা হয়েছে');
     load();
   };
 
@@ -82,7 +94,7 @@ const AdminOrders = () => {
                   </span>
                 </td>
                 <td className="p-3 text-xs">{new Date(o.created_at).toLocaleDateString('bn-BD')}</td>
-                <td className="p-3">
+                <td className="p-3 flex items-center gap-2">
                   <Select value={o.status} onValueChange={(v) => updateStatus(o.id, v)}>
                     <SelectTrigger className="h-8 text-xs w-32"><SelectValue /></SelectTrigger>
                     <SelectContent>
@@ -91,6 +103,9 @@ const AdminOrders = () => {
                       ))}
                     </SelectContent>
                   </Select>
+                  <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => deleteOrder(o.id)}>
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
                 </td>
               </tr>
             ))}
