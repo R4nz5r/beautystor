@@ -1,5 +1,5 @@
 import { NavLink as RouterNavLink, Outlet, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Package, ShoppingCart, Users, Image, Star, Settings, LogOut, ChevronLeft, Tag, AlertCircle } from 'lucide-react';
+import { LayoutDashboard, Package, ShoppingCart, Users, Image, Star, Settings, LogOut, ChevronLeft, Tag, AlertCircle, BarChart3 } from 'lucide-react';
 import { useIsAdmin, useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { useEffect, useState } from 'react';
