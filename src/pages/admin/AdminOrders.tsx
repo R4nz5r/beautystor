@@ -77,9 +77,9 @@ const AdminOrders = () => {
                 <td className="p-3 font-bold">৳{o.total}</td>
                 <td className="p-3">{o.payment_method === 'cod' ? 'COD' : 'অনলাইন'}</td>
                 <td className="p-3">
-                  <Badge variant={statusVariant[o.status] || 'secondary'}>
+                  <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold ${statusColors[o.status] || 'bg-muted text-muted-foreground'}`}>
                     {statusOptions.find(s => s.value === o.status)?.label || o.status}
-                  </Badge>
+                  </span>
                 </td>
                 <td className="p-3 text-xs">{new Date(o.created_at).toLocaleDateString('bn-BD')}</td>
                 <td className="p-3">

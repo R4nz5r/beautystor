@@ -55,6 +55,11 @@ const Header = () => {
           <button onClick={() => setSearchOpen(!searchOpen)} className="p-2 hover:bg-muted rounded-full transition-colors">
             <Search className="h-5 w-5" />
           </button>
+          {isAdmin && (
+            <Link to="/admin" className="p-2 hover:bg-muted rounded-full transition-colors text-primary" title="অ্যাডমিন প্যানেল">
+              <Shield className="h-5 w-5" />
+            </Link>
+          )}
           <Link to={user ? "/dashboard" : "/login"} className="p-2 hover:bg-muted rounded-full transition-colors">
             <User className="h-5 w-5" />
           </Link>

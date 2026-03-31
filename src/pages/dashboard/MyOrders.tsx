@@ -31,12 +31,12 @@ const MyOrders = () => {
       ) : (
         <div className="space-y-3">
           {orders.map(o => {
-            const s = statusMap[o.status] || { label: o.status, variant: 'secondary' as const };
+            const s = statusMap[o.status] || { label: o.status, color: 'bg-muted text-muted-foreground' };
             return (
               <Link key={o.id} to={`/dashboard/orders/${o.id}`} className="block border rounded-lg p-4 hover:bg-muted/50 transition-colors">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-xs font-mono text-muted-foreground">#{o.id.slice(0, 8)}</span>
-                  <Badge variant={s.variant}>{s.label}</Badge>
+                  <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold ${s.color}`}>{s.label}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">{new Date(o.created_at).toLocaleDateString('bn-BD')}</span>
