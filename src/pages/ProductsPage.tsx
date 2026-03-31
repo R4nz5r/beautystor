@@ -41,9 +41,10 @@ const ProductsPage = () => {
     setSelectedCat('all');
     setSearchQuery('');
     setFeaturedOnly(false);
+    setSortBy('newest');
   };
 
-  const hasActiveFilters = selectedCat !== 'all' || searchQuery.trim() || featuredOnly;
+  const hasActiveFilters = selectedCat !== 'all' || searchQuery.trim() || featuredOnly || sortBy !== 'newest';
 
   const FilterPanel = () => (
     <div className="space-y-6">
