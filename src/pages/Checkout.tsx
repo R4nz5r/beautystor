@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useCart } from '@/contexts/CartContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -8,6 +8,15 @@ import Header from '@/components/store/Header';
 import Footer from '@/components/store/Footer';
 import { toast } from 'sonner';
 import { Tag, X } from 'lucide-react';
+
+const getSessionId = () => {
+  let id = localStorage.getItem('checkout_session_id');
+  if (!id) {
+    id = crypto.randomUUID();
+    localStorage.setItem('checkout_session_id', id);
+  }
+  return id;
+};
 
 const Checkout = () => {
   const { items, subtotal, clearCart } = useCart();
