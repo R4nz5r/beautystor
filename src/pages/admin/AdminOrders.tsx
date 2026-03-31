@@ -30,6 +30,7 @@ const statusColors: Record<string, string> = {
 const AdminOrders = () => {
   const [orders, setOrders] = useState<any[]>([]);
   const [filter, setFilter] = useState('all');
+  const [deleteId, setDeleteId] = useState<string | null>(null);
 
   const load = async () => {
     let query = supabase.from('orders').select('*').order('created_at', { ascending: false });
@@ -45,12 +46,13 @@ const AdminOrders = () => {
     load();
   };
 
-  const deleteOrder = async (id: string) => {
-    if (!confirm('এই অর্ডারটি মুছে ফেলতে চান?')) return;
-    await supabase.from('order_items').delete().eq('order_id', id);
-    const { error } = await supabase.from('orders').delete().eq('id', id);
+  const confirmDelete = async () => {
+    if (!deleteId) return;
+    await supabase.from('order_items').delete().eq('order_id', deleteId);
+    const { error } = await supabase.from('orders').delete().eq('id', deleteId);
     if (error) toast.error('ডিলিট করতে সমস্যা হয়েছে');
     else toast.success('অর্ডার মুছে ফেলা হয়েছে');
+    setDeleteId(null);
     load();
   };
 
