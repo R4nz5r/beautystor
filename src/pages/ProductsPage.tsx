@@ -26,14 +26,16 @@ const ProductsPage = () => {
   }, []);
 
   useEffect(() => {
-    let query = supabase.from('products').select('*').eq('is_active', true).order('created_at', { ascending: false });
+    const orderCol = sortBy === 'price_asc' || sortBy === 'price_desc' ? 'price' : 'created_at';
+    const ascending = sortBy === 'price_asc' ? true : sortBy === 'price_desc' ? false : false;
+    let query = supabase.from('products').select('*').eq('is_active', true).order(orderCol, { ascending });
     if (selectedCat !== 'all') query = query.eq('category_id', selectedCat);
     if (featuredOnly) query = query.eq('featured', true);
     if (searchQuery.trim()) query = query.ilike('name', `%${searchQuery.trim()}%`);
     query.then(({ data }) => {
       if (data) setProducts(data.map(p => ({ ...p, images: typeof p.images === 'string' ? JSON.parse(p.images) : (p.images || []) })));
     });
-  }, [selectedCat, featuredOnly, searchQuery]);
+  }, [selectedCat, featuredOnly, searchQuery, sortBy]);
 
   const clearFilters = () => {
     setSelectedCat('all');
