@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import Header from '@/components/store/Header';
 import Footer from '@/components/store/Footer';
 import { toast } from 'sonner';
+import ReviewForm from '@/components/store/ReviewForm';
 
 const ProductDetail = () => {
   const { slug } = useParams();
