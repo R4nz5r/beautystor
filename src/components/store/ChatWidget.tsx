@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { MessageCircle, X, Send } from 'lucide-react';
+import { MessageCircle, X, Send, LogOut } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -18,6 +18,7 @@ const ChatWidget = () => {
   const [messages, setMessages] = useState<any[]>([]);
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
+  const [ended, setEnded] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const sessionId = useRef(getSessionId());
 
@@ -27,10 +28,18 @@ const ChatWidget = () => {
       .eq('session_id', sessionId.current).maybeSingle()
       .then(({ data }) => {
         if (data) {
-          setConversationId(data.id);
-          setName(data.visitor_name);
-          setStarted(true);
-          loadMessages(data.id);
+          if (data.status === 'closed') {
+            setEnded(true);
+            setStarted(true);
+            setConversationId(data.id);
+            setName(data.visitor_name);
+            loadMessages(data.id);
+          } else {
+            setConversationId(data.id);
+            setName(data.visitor_name);
+            setStarted(true);
+            loadMessages(data.id);
+          }
         }
       });
   }, []);
@@ -53,6 +62,16 @@ const ChatWidget = () => {
       }, (payload) => {
         setMessages(prev => [...prev, payload.new]);
       })
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'chat_conversations',
+        filter: `id=eq.${conversationId}`,
+      }, (payload: any) => {
+        if (payload.new?.status === 'closed') {
+          setEnded(true);
+        }
+      })
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
@@ -71,12 +90,13 @@ const ChatWidget = () => {
     if (data) {
       setConversationId(data.id);
       setStarted(true);
+      setEnded(false);
     }
   };
 
   const sendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!input.trim() || !conversationId || sending) return;
+    if (!input.trim() || !conversationId || sending || ended) return;
     setSending(true);
     await supabase.from('chat_messages').insert({
       conversation_id: conversationId,
@@ -85,6 +105,27 @@ const ChatWidget = () => {
     });
     setInput('');
     setSending(false);
+  };
+
+  const endChat = async () => {
+    if (!conversationId) return;
+    await supabase.from('chat_conversations')
+      .update({ status: 'closed' })
+      .eq('id', conversationId);
+    setEnded(true);
+  };
+
+  const startNewChat = () => {
+    // Clear session and reset
+    localStorage.removeItem('chat_session_id');
+    sessionId.current = crypto.randomUUID();
+    localStorage.setItem('chat_session_id', sessionId.current);
+    setConversationId(null);
+    setMessages([]);
+    setStarted(false);
+    setEnded(false);
+    setName('');
+    setInput('');
   };
 
   if (!open) {
@@ -103,7 +144,16 @@ const ChatWidget = () => {
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 bg-primary text-primary-foreground rounded-t-xl">
         <span className="font-semibold text-sm">লাইভ চ্যাট</span>
-        <button onClick={() => setOpen(false)}><X className="h-4 w-4" /></button>
+        <div className="flex items-center gap-1">
+          {started && !ended && (
+            <button onClick={endChat} title="চ্যাট শেষ করুন" className="p-1 hover:bg-primary-foreground/20 rounded">
+              <LogOut className="h-4 w-4" />
+            </button>
+          )}
+          <button onClick={() => setOpen(false)} className="p-1 hover:bg-primary-foreground/20 rounded">
+            <X className="h-4 w-4" />
+          </button>
+        </div>
       </div>
 
       {!started ? (
@@ -116,7 +166,7 @@ const ChatWidget = () => {
         <>
           {/* Messages */}
           <div className="flex-1 overflow-y-auto p-3 space-y-2">
-            {messages.length === 0 && (
+            {messages.length === 0 && !ended && (
               <p className="text-xs text-muted-foreground text-center mt-8">আপনার মেসেজ পাঠান, আমরা শীঘ্রই উত্তর দেব!</p>
             )}
             {messages.map(m => (
@@ -130,22 +180,30 @@ const ChatWidget = () => {
                 </div>
               </div>
             ))}
+            {ended && (
+              <div className="text-center py-4">
+                <p className="text-xs text-muted-foreground mb-3">চ্যাট শেষ হয়েছে</p>
+                <Button size="sm" variant="outline" onClick={startNewChat}>নতুন চ্যাট শুরু করুন</Button>
+              </div>
+            )}
             <div ref={bottomRef} />
           </div>
 
           {/* Input */}
-          <form onSubmit={sendMessage} className="flex items-center gap-2 p-3 border-t">
-            <Input
-              placeholder="মেসেজ লিখুন..."
-              value={input}
-              onChange={e => setInput(e.target.value)}
-              className="flex-1 text-sm"
-              maxLength={2000}
-            />
-            <Button type="submit" size="icon" disabled={sending} className="shrink-0">
-              <Send className="h-4 w-4" />
-            </Button>
-          </form>
+          {!ended && (
+            <form onSubmit={sendMessage} className="flex items-center gap-2 p-3 border-t">
+              <Input
+                placeholder="মেসেজ লিখুন..."
+                value={input}
+                onChange={e => setInput(e.target.value)}
+                className="flex-1 text-sm"
+                maxLength={2000}
+              />
+              <Button type="submit" size="icon" disabled={sending} className="shrink-0">
+                <Send className="h-4 w-4" />
+              </Button>
+            </form>
+          )}
         </>
       )}
     </div>

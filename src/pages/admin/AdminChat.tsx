@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from 'react';
-import { MessageCircle, Send, Volume2 } from 'lucide-react';
+import { MessageCircle, Send, Volume2, XCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -49,11 +49,10 @@ const AdminChat = () => {
 
   useEffect(() => { loadConversations(); }, []);
 
-  // Realtime: new conversations
+  // Realtime: new conversations + updates
   useEffect(() => {
     const ch = supabase.channel('admin-convs')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chat_conversations' }, () => {
-        notificationSound();
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'chat_conversations' }, () => {
         loadConversations();
       })
       .subscribe();
@@ -101,6 +100,13 @@ const AdminChat = () => {
     setSending(false);
   };
 
+  const endConversation = async (convId: string) => {
+    await supabase.from('chat_conversations')
+      .update({ status: 'closed' })
+      .eq('id', convId);
+    loadConversations();
+  };
+
   const selectedConv = conversations.find(c => c.id === selected);
 
   return (
@@ -123,7 +129,15 @@ const AdminChat = () => {
                 className={`w-full text-left px-4 py-3 hover:bg-muted/50 transition-colors flex items-center justify-between ${selected === c.id ? 'bg-primary/10' : ''}`}
               >
                 <div>
-                  <p className="font-medium text-sm">{c.visitor_name}</p>
+                  <div className="flex items-center gap-2">
+                    <p className="font-medium text-sm">{c.visitor_name}</p>
+                    {c.status === 'closed' && (
+                      <span className="text-[10px] bg-muted text-muted-foreground px-1.5 py-0.5 rounded">শেষ</span>
+                    )}
+                    {c.status !== 'closed' && (
+                      <span className="h-2 w-2 rounded-full bg-green-500 inline-block" />
+                    )}
+                  </div>
                   <p className="text-xs text-muted-foreground">
                     {new Date(c.updated_at).toLocaleString('bn-BD')}
                   </p>
@@ -145,9 +159,24 @@ const AdminChat = () => {
         <div className="md:col-span-2 bg-card border rounded-lg flex flex-col overflow-hidden">
           {selected ? (
             <>
-              <div className="px-4 py-3 border-b bg-muted/50 flex items-center gap-2">
-                <Volume2 className="h-4 w-4 text-muted-foreground" />
-                <span className="font-medium text-sm">{selectedConv?.visitor_name}</span>
+              <div className="px-4 py-3 border-b bg-muted/50 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Volume2 className="h-4 w-4 text-muted-foreground" />
+                  <span className="font-medium text-sm">{selectedConv?.visitor_name}</span>
+                  {selectedConv?.status === 'closed' && (
+                    <span className="text-[10px] bg-muted text-muted-foreground px-1.5 py-0.5 rounded">শেষ হয়েছে</span>
+                  )}
+                </div>
+                {selectedConv?.status !== 'closed' && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="text-destructive hover:text-destructive text-xs h-7"
+                    onClick={() => endConversation(selected)}
+                  >
+                    <XCircle className="h-3.5 w-3.5 mr-1" /> চ্যাট শেষ করুন
+                  </Button>
+                )}
               </div>
               <div className="flex-1 overflow-y-auto p-4 space-y-2">
                 {messages.map(m => (
@@ -164,20 +193,25 @@ const AdminChat = () => {
                     </div>
                   </div>
                 ))}
+                {selectedConv?.status === 'closed' && (
+                  <p className="text-center text-xs text-muted-foreground py-2">এই চ্যাট শেষ হয়েছে</p>
+                )}
                 <div ref={bottomRef} />
               </div>
-              <form onSubmit={sendReply} className="flex items-center gap-2 p-3 border-t">
-                <Input
-                  placeholder="উত্তর লিখুন..."
-                  value={input}
-                  onChange={e => setInput(e.target.value)}
-                  className="flex-1"
-                  maxLength={2000}
-                />
-                <Button type="submit" size="icon" disabled={sending}>
-                  <Send className="h-4 w-4" />
-                </Button>
-              </form>
+              {selectedConv?.status !== 'closed' && (
+                <form onSubmit={sendReply} className="flex items-center gap-2 p-3 border-t">
+                  <Input
+                    placeholder="উত্তর লিখুন..."
+                    value={input}
+                    onChange={e => setInput(e.target.value)}
+                    className="flex-1"
+                    maxLength={2000}
+                  />
+                  <Button type="submit" size="icon" disabled={sending}>
+                    <Send className="h-4 w-4" />
+                  </Button>
+                </form>
+              )}
             </>
           ) : (
             <div className="flex-1 flex items-center justify-center text-muted-foreground text-sm">
