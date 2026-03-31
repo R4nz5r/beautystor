@@ -109,9 +109,8 @@ const AdminOrders = () => {
                   </Select>
                 </td>
                 <td className="p-3">
-                  <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive gap-1" onClick={() => setDeleteId(o.id)}>
+                  <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => setDeleteId(o.id)}>
                     <Trash2 className="h-4 w-4" />
-                    ডিলিট করুন
                   </Button>
                 </td>
               </tr>
