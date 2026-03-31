@@ -66,15 +66,22 @@ const ProductDetail = () => {
   const image = product.images?.[selectedImage] || '/placeholder.svg';
   const hasDiscount = product.sale_price && product.sale_price < product.price;
 
+  const getCartItem = () => ({
+    id: product.id,
+    name: product.name,
+    price: product.price,
+    sale_price: product.sale_price,
+    image: product.images?.[0] || '/placeholder.svg',
+    slug: product.slug,
+  });
+
   const handleAddToCart = () => {
-    addToCart({
-      id: product.id,
-      name: product.name,
-      price: product.price,
-      sale_price: product.sale_price,
-      image: product.images?.[0] || '/placeholder.svg',
-      slug: product.slug,
-    }, qty);
+    addToCart(getCartItem(), qty);
+  };
+
+  const handleBuyNow = () => {
+    addToCart(getCartItem(), qty);
+    navigate('/checkout');
   };
 
   return (
