@@ -3,6 +3,7 @@ import { MessageCircle, X, Send, LogOut } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { validateName, validatePhone } from '@/lib/validators';
 
 const getSessionId = () => {
   let sid = localStorage.getItem('chat_session_id');
