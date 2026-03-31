@@ -76,9 +76,21 @@ const Header = () => {
               <Shield className="h-5 w-5" />
             </Link>
           )}
-          <Link to={user ? "/dashboard" : "/login"} className="p-2 hover:bg-muted rounded-full transition-colors">
-            <User className="h-5 w-5" />
-          </Link>
+          {user ? (
+            <div className="flex items-center gap-1">
+              <Link to="/dashboard" className="flex items-center gap-1.5 px-3 py-1.5 hover:bg-muted rounded-full transition-colors text-sm font-medium text-foreground">
+                <User className="h-4 w-4" />
+                <span className="hidden sm:inline max-w-[100px] truncate">{profileName}</span>
+              </Link>
+              <button onClick={handleLogout} className="p-2 hover:bg-destructive/10 rounded-full transition-colors text-destructive" title="লগআউট">
+                <LogOut className="h-4 w-4" />
+              </button>
+            </div>
+          ) : (
+            <Link to="/login" className="p-2 hover:bg-muted rounded-full transition-colors">
+              <User className="h-5 w-5" />
+            </Link>
+          )}
           <Link to="/cart" className="p-2 hover:bg-muted rounded-full transition-colors relative">
             <ShoppingBag className="h-5 w-5" />
             {totalItems > 0 && (
