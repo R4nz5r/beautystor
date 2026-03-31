@@ -11,6 +11,7 @@ import { toast } from 'sonner';
 
 const ProductDetail = () => {
   const { slug } = useParams();
+  const navigate = useNavigate();
   const [product, setProduct] = useState<any>(null);
   const [reviews, setReviews] = useState<any[]>([]);
   const [qty, setQty] = useState(1);
