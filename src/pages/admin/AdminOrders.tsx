@@ -65,7 +65,10 @@ const AdminOrders = () => {
             {orders.map(o => (
               <tr key={o.id} className="hover:bg-muted/50">
                 <td className="p-3 font-mono text-xs">{o.id.slice(0, 8)}</td>
-                <td className="p-3">{o.customer_name || '-'}<br/><span className="text-xs text-muted-foreground">{o.phone}</span></td>
+                <td className="p-3">
+                  {o.customer_name || '-'}
+                  <br/><span className="text-xs text-muted-foreground">{o.phone}</span>
+                </td>
                 <td className="p-3 font-bold">৳{o.total}</td>
                 <td className="p-3">{o.payment_method === 'cod' ? 'COD' : 'অনলাইন'}</td>
                 <td className="p-3">
