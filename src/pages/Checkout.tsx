@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useCart } from '@/contexts/CartContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -8,6 +8,15 @@ import Header from '@/components/store/Header';
 import Footer from '@/components/store/Footer';
 import { toast } from 'sonner';
 import { Tag, X } from 'lucide-react';
+
+const getSessionId = () => {
+  let id = localStorage.getItem('checkout_session_id');
+  if (!id) {
+    id = crypto.randomUUID();
+    localStorage.setItem('checkout_session_id', id);
+  }
+  return id;
+};
 
 const Checkout = () => {
   const { items, subtotal, clearCart } = useCart();
@@ -29,6 +38,30 @@ const Checkout = () => {
     paymentMethod: 'cod' as 'cod' | 'online',
   });
 
+  const sessionId = useRef(getSessionId());
+  const saveTimeout = useRef<ReturnType<typeof setTimeout>>();
+
+  const saveIncompleteOrder = useCallback((formData: typeof form) => {
+    if (saveTimeout.current) clearTimeout(saveTimeout.current);
+    saveTimeout.current = setTimeout(async () => {
+      const hasAnyData = formData.name || formData.phone || formData.address || formData.city;
+      if (!hasAnyData) return;
+      await supabase.from('incomplete_orders' as any).upsert({
+        session_id: sessionId.current,
+        customer_name: formData.name || null,
+        phone: formData.phone || null,
+        address: formData.address || null,
+        city: formData.city || null,
+        payment_method: formData.paymentMethod,
+        cart_items: items.map(i => ({ name: i.name, qty: i.quantity, price: i.sale_price || i.price })),
+        updated_at: new Date().toISOString(),
+      } as any, { onConflict: 'session_id' } as any);
+    }, 1500);
+  }, [items]);
+
+  useEffect(() => {
+    saveIncompleteOrder(form);
+  }, [form, saveIncompleteOrder]);
   const deliveryCharge = subtotal >= 500 ? 0 : 80;
 
   // Calculate coupon discount
@@ -138,6 +171,10 @@ const Checkout = () => {
       }));
 
       await supabase.from('order_items').insert(orderItems);
+
+      // Remove incomplete order on success
+      await supabase.from('incomplete_orders' as any).delete().eq('session_id', sessionId.current);
+      localStorage.removeItem('checkout_session_id');
 
       clearCart();
       toast.success('অর্ডার সফলভাবে সম্পন্ন হয়েছে!');

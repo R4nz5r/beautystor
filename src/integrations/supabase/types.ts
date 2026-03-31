@@ -140,6 +140,45 @@ export type Database = {
         }
         Relationships: []
       }
+      incomplete_orders: {
+        Row: {
+          address: string | null
+          cart_items: Json | null
+          city: string | null
+          created_at: string
+          customer_name: string | null
+          id: string
+          payment_method: string | null
+          phone: string | null
+          session_id: string
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          cart_items?: Json | null
+          city?: string | null
+          created_at?: string
+          customer_name?: string | null
+          id?: string
+          payment_method?: string | null
+          phone?: string | null
+          session_id: string
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          cart_items?: Json | null
+          city?: string | null
+          created_at?: string
+          customer_name?: string | null
+          id?: string
+          payment_method?: string | null
+          phone?: string | null
+          session_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       order_items: {
         Row: {
           created_at: string
