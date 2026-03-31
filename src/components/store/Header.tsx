@@ -1,9 +1,11 @@
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { ShoppingBag, User, Search, Menu, X, Shield } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { ShoppingBag, User, Search, Menu, X, Shield, LogOut } from 'lucide-react';
 import { useCart } from '@/contexts/CartContext';
 import { useAuth, useIsAdmin } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
+import { toast } from 'sonner';
 
 const navLinks = [
   { label: 'হোম', href: '/' },
