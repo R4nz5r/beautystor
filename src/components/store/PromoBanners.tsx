@@ -18,7 +18,13 @@ const PromoBanners = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {banners.map(b => (
             <Link key={b.id} to={b.link || '/products'} className="rounded-lg overflow-hidden aspect-[2/1] bg-muted group">
-              <img src={b.image_url} alt="Promo" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+              <img 
+                src={b.image_url} 
+                alt="Promo" 
+                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" 
+                onError={(e) => { (e.target as HTMLImageElement).src = '/placeholder.svg'; }}
+                loading="lazy"
+              />
             </Link>
           ))}
         </div>
