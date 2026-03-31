@@ -8,6 +8,7 @@ import Header from '@/components/store/Header';
 import Footer from '@/components/store/Footer';
 import { toast } from 'sonner';
 import { Tag, X } from 'lucide-react';
+import { validateName, validatePhone, validateRequired } from '@/lib/validators';
 
 const getSessionId = () => {
   let id = localStorage.getItem('checkout_session_id');
