@@ -1,22 +1,26 @@
 
 
-## Plan: Make Admin Customers page useful with aggregated order data
+## Plan: Unread Badge on Chat Sidebar + Home Button in Admin
 
-Instead of querying `profiles`, query the `orders` table directly and aggregate by `customer_name` + `phone` to show real customer data.
+### Changes
 
-### Changes: `src/pages/admin/AdminCustomers.tsx`
+**1. Unread message count badge on the "লাইভ চ্যাট" sidebar link (`AdminLayout.tsx`)**
 
-- Query all orders from Supabase
-- Group by `customer_name + phone` combination to identify unique customers
-- For each unique customer, compute:
-  - **Total orders count**
-  - **Total amount spent** (sum of `total`)
-  - **Last order date**
-  - **Phone** (from orders)
-  - **Address** (from `shipping_address` JSON field)
-- Sort by total spent descending
-- Update table columns: নাম, ফোন, ঠিকানা, মোট অর্ডার, মোট খরচ, সর্বশেষ অর্ডার
-- Add search/filter by customer name or phone
+- Add a Supabase Realtime subscription in `AdminLayout` that listens for new `chat_messages` where `sender_type = 'user'`.
+- Track total unread count in state. When on `/admin/chat`, reset it.
+- Render a red badge with the unread count next to the "লাইভ চ্যাট" nav item (or a dot if count is 0 but there are new messages).
+- The `links` array currently has a duplicate "সেটিংস" entry — will remove that too.
 
-Single file change, no database modifications needed.
+**2. Home button in sidebar footer (`AdminLayout.tsx`)**
+
+- Add a "হোম" button with a `Home` icon next to the logout button (or above it) that navigates to `/` (the storefront).
+- Visible in both expanded and collapsed sidebar states.
+
+### Files to modify
+- `src/pages/admin/AdminLayout.tsx` — add realtime unread tracking, home button, fix duplicate settings link
+
+### Technical details
+- Subscribe to `postgres_changes` on `chat_messages` table for `INSERT` events, increment counter for `sender_type === 'user'`.
+- Use `useLocation` to detect when admin is on `/admin/chat` to auto-clear the badge.
+- Render the badge as a small red circle with count using existing `Badge` component or inline styled span.
 
