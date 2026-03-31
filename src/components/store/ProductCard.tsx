@@ -1,7 +1,11 @@
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { ShoppingBag } from 'lucide-react';
+import { ShoppingBag, Heart } from 'lucide-react';
 import { useCart } from '@/contexts/CartContext';
+import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
+import { toast } from 'sonner';
 
 interface Product {
   id: string;
@@ -14,9 +18,17 @@ interface Product {
 
 const ProductCard = ({ product }: { product: Product }) => {
   const { addToCart } = useCart();
+  const { user } = useAuth();
+  const [wishlisted, setWishlisted] = useState(false);
   const image = product.images?.[0] || '/placeholder.svg';
   const hasDiscount = product.sale_price && product.sale_price < product.price;
   const discountPercent = hasDiscount ? Math.round((1 - product.sale_price! / product.price) * 100) : 0;
+
+  useEffect(() => {
+    if (!user) return;
+    supabase.from('wishlists').select('id').eq('user_id', user.id).eq('product_id', product.id).maybeSingle()
+      .then(({ data }) => { if (data) setWishlisted(true); });
+  }, [user, product.id]);
 
   const handleAdd = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -28,6 +40,20 @@ const ProductCard = ({ product }: { product: Product }) => {
       image,
       slug: product.slug,
     });
+  };
+
+  const toggleWishlist = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (!user) { toast.error('উইশলিস্টে যোগ করতে লগইন করুন'); return; }
+    if (wishlisted) {
+      await supabase.from('wishlists').delete().eq('user_id', user.id).eq('product_id', product.id);
+      setWishlisted(false);
+      toast.success('উইশলিস্ট থেকে সরানো হয়েছে');
+    } else {
+      await supabase.from('wishlists').insert({ user_id: user.id, product_id: product.id });
+      setWishlisted(true);
+      toast.success('উইশলিস্টে যোগ করা হয়েছে');
+    }
   };
 
   return (
@@ -45,6 +71,12 @@ const ProductCard = ({ product }: { product: Product }) => {
             -{discountPercent}%
           </span>
         )}
+        <button
+          onClick={toggleWishlist}
+          className="absolute top-2 right-2 p-1.5 rounded-full bg-background/80 backdrop-blur-sm hover:bg-background transition-colors"
+        >
+          <Heart className={`h-4 w-4 ${wishlisted ? 'fill-destructive text-destructive' : 'text-foreground/70'}`} />
+        </button>
         <Button
           size="icon"
           className="absolute bottom-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity rounded-full h-9 w-9"

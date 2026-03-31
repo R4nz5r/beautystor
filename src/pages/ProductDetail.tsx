@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { Minus, Plus, ShoppingBag, ArrowLeft, Star } from 'lucide-react';
+import { Minus, Plus, ShoppingBag, ArrowLeft, Star, Heart } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useCart } from '@/contexts/CartContext';
+import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import Header from '@/components/store/Header';
 import Footer from '@/components/store/Footer';
+import { toast } from 'sonner';
 
 const ProductDetail = () => {
   const { slug } = useParams();
