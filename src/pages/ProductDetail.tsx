@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { Minus, Plus, ShoppingBag, ArrowLeft, Star } from 'lucide-react';
+import { Minus, Plus, ShoppingBag, ArrowLeft, Star, Heart } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useCart } from '@/contexts/CartContext';
+import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import Header from '@/components/store/Header';
 import Footer from '@/components/store/Footer';
+import { toast } from 'sonner';
 
 const ProductDetail = () => {
   const { slug } = useParams();
@@ -13,7 +15,9 @@ const ProductDetail = () => {
   const [reviews, setReviews] = useState<any[]>([]);
   const [qty, setQty] = useState(1);
   const [selectedImage, setSelectedImage] = useState(0);
+  const [wishlisted, setWishlisted] = useState(false);
   const { addToCart } = useCart();
+  const { user } = useAuth();
 
   useEffect(() => {
     if (!slug) return;
@@ -27,6 +31,25 @@ const ProductDetail = () => {
         }
       });
   }, [slug]);
+
+  useEffect(() => {
+    if (!user || !product) return;
+    supabase.from('wishlists').select('id').eq('user_id', user.id).eq('product_id', product.id).maybeSingle()
+      .then(({ data }) => { if (data) setWishlisted(true); });
+  }, [user, product?.id]);
+
+  const toggleWishlist = async () => {
+    if (!user) { toast.error('উইশলিস্টে যোগ করতে লগইন করুন'); return; }
+    if (wishlisted) {
+      await supabase.from('wishlists').delete().eq('user_id', user.id).eq('product_id', product.id);
+      setWishlisted(false);
+      toast.success('উইশলিস্ট থেকে সরানো হয়েছে');
+    } else {
+      await supabase.from('wishlists').insert({ user_id: user.id, product_id: product.id });
+      setWishlisted(true);
+      toast.success('উইশলিস্টে যোগ করা হয়েছে');
+    }
+  };
 
   if (!product) {
     return (
@@ -116,6 +139,9 @@ const ProductDetail = () => {
                 </Button>
                 <Button variant="secondary" asChild>
                   <Link to="/checkout">এখনই কিনুন</Link>
+                </Button>
+                <Button variant="outline" size="icon" onClick={toggleWishlist} className="shrink-0">
+                  <Heart className={`h-5 w-5 ${wishlisted ? 'fill-destructive text-destructive' : ''}`} />
                 </Button>
               </div>
             </div>
