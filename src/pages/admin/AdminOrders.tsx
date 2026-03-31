@@ -32,7 +32,7 @@ const AdminOrders = () => {
   useEffect(() => { load(); }, [filter]);
 
   const updateStatus = async (id: string, status: string) => {
-    await supabase.from('orders').update({ status, updated_at: new Date().toISOString() }).eq('id', id);
+    await supabase.from('orders').update({ status: status as any, updated_at: new Date().toISOString() }).eq('id', id);
     load();
   };
 
