@@ -19,9 +19,23 @@ const Header = () => {
   const [menuOpen, setMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [profileName, setProfileName] = useState<string | null>(null);
   const { totalItems } = useCart();
   const { user } = useAuth();
   const { isAdmin } = useIsAdmin();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!user) { setProfileName(null); return; }
+    supabase.from('profiles').select('name').eq('user_id', user.id).maybeSingle()
+      .then(({ data }) => setProfileName(data?.name || user.email?.split('@')[0] || null));
+  }, [user]);
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    toast.success('লগআউট সফল');
+    navigate('/');
+  };
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
