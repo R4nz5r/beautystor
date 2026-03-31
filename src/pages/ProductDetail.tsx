@@ -140,6 +140,9 @@ const ProductDetail = () => {
                 <Button variant="secondary" asChild>
                   <Link to="/checkout">এখনই কিনুন</Link>
                 </Button>
+                <Button variant="outline" size="icon" onClick={toggleWishlist} className="shrink-0">
+                  <Heart className={`h-5 w-5 ${wishlisted ? 'fill-destructive text-destructive' : ''}`} />
+                </Button>
               </div>
             </div>
           </div>
