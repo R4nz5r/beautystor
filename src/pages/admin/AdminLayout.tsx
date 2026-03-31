@@ -1,5 +1,5 @@
 import { NavLink as RouterNavLink, Outlet, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Package, ShoppingCart, Users, Image, Star, Settings, LogOut, ChevronLeft, Tag, AlertCircle } from 'lucide-react';
+import { LayoutDashboard, Package, ShoppingCart, Users, Image, Star, Settings, LogOut, ChevronLeft, Tag, AlertCircle, BarChart3 } from 'lucide-react';
 import { useIsAdmin, useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { useEffect, useState } from 'react';
@@ -8,6 +8,7 @@ const links = [
   { to: '/admin', icon: LayoutDashboard, label: 'ড্যাশবোর্ড', end: true },
   { to: '/admin/orders', icon: ShoppingCart, label: 'অর্ডার' },
   { to: '/admin/incomplete-orders', icon: AlertCircle, label: 'ইনকমপ্লিট অর্ডার' },
+  { to: '/admin/recovery-analytics', icon: BarChart3, label: 'রিকভারি অ্যানালিটিক্স' },
   { to: '/admin/products', icon: Package, label: 'প্রোডাক্ট' },
   { to: '/admin/categories', icon: Package, label: 'ক্যাটাগরি' },
   { to: '/admin/customers', icon: Users, label: 'কাস্টমার' },
