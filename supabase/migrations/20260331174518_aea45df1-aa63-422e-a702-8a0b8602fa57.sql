@@ -1,0 +1,1 @@
+CREATE POLICY "Anon can select own session incomplete orders" ON public.incomplete_orders FOR SELECT TO anon USING (true);
