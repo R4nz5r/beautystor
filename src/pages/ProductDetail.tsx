@@ -15,7 +15,9 @@ const ProductDetail = () => {
   const [reviews, setReviews] = useState<any[]>([]);
   const [qty, setQty] = useState(1);
   const [selectedImage, setSelectedImage] = useState(0);
+  const [wishlisted, setWishlisted] = useState(false);
   const { addToCart } = useCart();
+  const { user } = useAuth();
 
   useEffect(() => {
     if (!slug) return;
