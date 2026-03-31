@@ -14,6 +14,7 @@ const ChatWidget = () => {
   const [open, setOpen] = useState(false);
   const [started, setStarted] = useState(false);
   const [name, setName] = useState('');
+  const [phone, setPhone] = useState('');
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [messages, setMessages] = useState<any[]>([]);
   const [input, setInput] = useState('');
@@ -22,7 +23,6 @@ const ChatWidget = () => {
   const bottomRef = useRef<HTMLDivElement>(null);
   const sessionId = useRef(getSessionId());
 
-  // Check existing conversation
   useEffect(() => {
     supabase.from('chat_conversations').select('*')
       .eq('session_id', sessionId.current).maybeSingle()
@@ -50,30 +50,22 @@ const ChatWidget = () => {
     if (data) setMessages(data);
   };
 
-  // Realtime subscription
   useEffect(() => {
     if (!conversationId) return;
     const channel = supabase.channel(`chat-${conversationId}`)
       .on('postgres_changes', {
-        event: 'INSERT',
-        schema: 'public',
-        table: 'chat_messages',
+        event: 'INSERT', schema: 'public', table: 'chat_messages',
         filter: `conversation_id=eq.${conversationId}`,
       }, (payload) => {
         setMessages(prev => [...prev, payload.new]);
       })
       .on('postgres_changes', {
-        event: 'UPDATE',
-        schema: 'public',
-        table: 'chat_conversations',
+        event: 'UPDATE', schema: 'public', table: 'chat_conversations',
         filter: `id=eq.${conversationId}`,
       }, (payload: any) => {
-        if (payload.new?.status === 'closed') {
-          setEnded(true);
-        }
+        if (payload.new?.status === 'closed') setEnded(true);
       })
       .subscribe();
-
     return () => { supabase.removeChannel(channel); };
   }, [conversationId]);
 
@@ -85,7 +77,11 @@ const ChatWidget = () => {
     e.preventDefault();
     if (!name.trim()) return;
     const { data } = await supabase.from('chat_conversations')
-      .insert({ visitor_name: name.trim(), session_id: sessionId.current })
+      .insert({
+        visitor_name: name.trim(),
+        session_id: sessionId.current,
+        visitor_phone: phone.trim() || null,
+      } as any)
       .select().single();
     if (data) {
       setConversationId(data.id);
@@ -116,7 +112,6 @@ const ChatWidget = () => {
   };
 
   const startNewChat = () => {
-    // Clear session and reset
     localStorage.removeItem('chat_session_id');
     sessionId.current = crypto.randomUUID();
     localStorage.setItem('chat_session_id', sessionId.current);
@@ -125,6 +120,7 @@ const ChatWidget = () => {
     setStarted(false);
     setEnded(false);
     setName('');
+    setPhone('');
     setInput('');
   };
 
@@ -140,31 +136,50 @@ const ChatWidget = () => {
   }
 
   return (
-    <div className="fixed bottom-5 right-5 z-50 w-80 sm:w-96 bg-card border rounded-xl shadow-2xl flex flex-col" style={{ height: '28rem' }}>
+    <div className="fixed bottom-5 right-5 z-50 w-80 sm:w-96 bg-card border rounded-xl shadow-2xl flex flex-col" style={{ height: '30rem' }}>
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 bg-primary text-primary-foreground rounded-t-xl">
-        <span className="font-semibold text-sm">লাইভ চ্যাট</span>
-        <div className="flex items-center gap-1">
-          {started && !ended && (
-            <button onClick={endChat} title="চ্যাট শেষ করুন" className="p-1 hover:bg-primary-foreground/20 rounded">
-              <LogOut className="h-4 w-4" />
+      <div className="flex flex-col rounded-t-xl overflow-hidden">
+        <div className="flex items-center justify-between px-4 py-3 bg-primary text-primary-foreground">
+          <span className="font-semibold text-sm">সাহায্য প্রয়োজন?</span>
+          <div className="flex items-center gap-1">
+            {started && !ended && (
+              <button onClick={endChat} title="চ্যাট শেষ করুন" className="p-1 hover:bg-primary-foreground/20 rounded">
+                <LogOut className="h-4 w-4" />
+              </button>
+            )}
+            <button onClick={() => setOpen(false)} className="p-1 hover:bg-primary-foreground/20 rounded">
+              <X className="h-4 w-4" />
             </button>
-          )}
-          <button onClick={() => setOpen(false)} className="p-1 hover:bg-primary-foreground/20 rounded">
-            <X className="h-4 w-4" />
-          </button>
+          </div>
         </div>
+        {!started && (
+          <div className="bg-primary/90 text-primary-foreground px-4 pb-2 text-xs">
+            আমরা আপনাকে সাহায্য করতে প্রস্তুত
+          </div>
+        )}
       </div>
 
       {!started ? (
         <form onSubmit={startChat} className="flex-1 flex flex-col items-center justify-center p-6 gap-4">
-          <p className="text-sm text-muted-foreground text-center">চ্যাট শুরু করতে আপনার নাম লিখুন</p>
-          <Input placeholder="আপনার নাম" value={name} onChange={e => setName(e.target.value)} maxLength={100} />
+          <div className="flex flex-col items-center gap-1 mb-2">
+            <MessageCircle className="h-10 w-10 text-primary" />
+            <p className="text-sm font-medium">চ্যাট শুরু করুন</p>
+            <p className="text-xs text-muted-foreground">আপনার নাম দিয়ে চ্যাট শুরু করুন</p>
+          </div>
+          <div className="w-full space-y-3">
+            <div>
+              <label className="text-xs font-medium mb-1 block">আপনার নাম *</label>
+              <Input placeholder="নাম লিখুন" value={name} onChange={e => setName(e.target.value)} maxLength={100} required />
+            </div>
+            <div>
+              <label className="text-xs font-medium mb-1 block">ফোন নম্বর (ঐচ্ছিক)</label>
+              <Input placeholder="01XXXXXXXXX" value={phone} onChange={e => setPhone(e.target.value)} maxLength={15} type="tel" />
+            </div>
+          </div>
           <Button type="submit" className="w-full">চ্যাট শুরু করুন</Button>
         </form>
       ) : (
         <>
-          {/* Messages */}
           <div className="flex-1 overflow-y-auto p-3 space-y-2">
             {messages.length === 0 && !ended && (
               <p className="text-xs text-muted-foreground text-center mt-8">আপনার মেসেজ পাঠান, আমরা শীঘ্রই উত্তর দেব!</p>
@@ -188,8 +203,6 @@ const ChatWidget = () => {
             )}
             <div ref={bottomRef} />
           </div>
-
-          {/* Input */}
           {!ended && (
             <form onSubmit={sendMessage} className="flex items-center gap-2 p-3 border-t">
               <Input
