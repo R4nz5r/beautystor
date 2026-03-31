@@ -62,8 +62,7 @@ const Checkout = () => {
   useEffect(() => {
     saveIncompleteOrder(form);
   }, [form, saveIncompleteOrder]);
-
-
+  const deliveryCharge = subtotal >= 500 ? 0 : 80;
 
   // Calculate coupon discount
   const couponDiscount = appliedCoupon
