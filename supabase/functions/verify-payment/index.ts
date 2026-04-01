@@ -21,8 +21,7 @@ serve(async (req) => {
       });
     }
 
-    const body = await req.json();
-    const { invoice_id } = body;
+    const { invoice_id, order_id } = await req.json();
 
     if (!invoice_id) {
       return new Response(JSON.stringify({ error: 'Missing invoice_id' }), {
@@ -42,21 +41,25 @@ serve(async (req) => {
 
     const verifyData = await verifyRes.json();
 
-    if (verifyData.status === 'COMPLETED') {
+    // Update order if payment completed
+    if (verifyData.status === 'COMPLETED' && order_id) {
       const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
       const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
       const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-      const orderId = verifyData.metadata?.order_id;
-      if (orderId) {
-        await supabase.from('orders').update({
-          payment_status: 'paid',
-          updated_at: new Date().toISOString(),
-        }).eq('id', orderId);
-      }
+      await supabase.from('orders').update({
+        payment_status: 'paid',
+        updated_at: new Date().toISOString(),
+      }).eq('id', order_id);
     }
 
-    return new Response(JSON.stringify({ success: true }), {
+    return new Response(JSON.stringify({
+      status: verifyData.status,
+      payment_method: verifyData.payment_method,
+      transaction_id: verifyData.transaction_id,
+      amount: verifyData.amount,
+      sender_number: verifyData.sender_number,
+    }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (error) {

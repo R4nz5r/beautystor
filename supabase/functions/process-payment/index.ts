@@ -13,7 +13,7 @@ serve(async (req) => {
 
   try {
     const UDDOKTAPAY_API_KEY = Deno.env.get('UDDOKTAPAY_API_KEY');
-    const UDDOKTAPAY_BASE_URL = Deno.env.get('UDDOKTAPAY_BASE_URL') || 'https://sandbox.uddoktapay.com/api';
+    const UDDOKTAPAY_BASE_URL = Deno.env.get('UDDOKTAPAY_BASE_URL') || 'https://beautystor.paymently.io/api';
 
     if (!UDDOKTAPAY_API_KEY) {
       return new Response(
@@ -34,7 +34,9 @@ serve(async (req) => {
     const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
-    // Initiate payment with UddoktaPay
+    const appUrl = 'https://beautystor.lovable.app';
+
+    // Initiate payment with UddoktaPay - full amount
     const paymentRes = await fetch(`${UDDOKTAPAY_BASE_URL}/checkout-v2`, {
       method: 'POST',
       headers: {
@@ -46,24 +48,25 @@ serve(async (req) => {
         email: customer_email || 'customer@example.com',
         amount: String(amount),
         metadata: { order_id },
-        redirect_url: redirect_url || `${req.headers.get('origin')}/order-confirmation/${order_id}`,
-        cancel_url: cancel_url || `${req.headers.get('origin')}/checkout`,
+        redirect_url: redirect_url || `${appUrl}/order-confirmation/${order_id}`,
+        return_type: 'GET',
+        cancel_url: cancel_url || `${appUrl}/checkout`,
         webhook_url: `${SUPABASE_URL}/functions/v1/payment-webhook`,
       }),
     });
 
     const paymentData = await paymentRes.json();
 
-    if (!paymentRes.ok) {
+    if (!paymentRes.ok || !paymentData.status) {
       return new Response(
         JSON.stringify({ error: 'Payment initiation failed', details: paymentData }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Update order payment status
+    // Update order payment status to pending
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
-    await supabase.from('orders').update({ payment_status: 'partial' }).eq('id', order_id);
+    await supabase.from('orders').update({ payment_status: 'unpaid' }).eq('id', order_id);
 
     return new Response(
       JSON.stringify({ payment_url: paymentData.payment_url }),
