@@ -157,9 +157,16 @@ const OrderConfirmation = () => {
                   </div>
                 </div>
               )}
-              <div className="flex gap-3 justify-center">
-                <Button asChild><Link to="/products">শপিং চালিয়ে যান</Link></Button>
-                <Button variant="outline" asChild><Link to="/">হোমে ফিরুন</Link></Button>
+              <div className="flex flex-col gap-3 items-center">
+                {order && (
+                  <Button asChild className="w-full max-w-xs">
+                    <Link to={`/dashboard/orders/${order.id}`}>অর্ডার বিস্তারিত দেখুন</Link>
+                  </Button>
+                )}
+                <div className="flex gap-3">
+                  <Button variant="outline" asChild><Link to="/products">শপিং চালিয়ে যান</Link></Button>
+                  <Button variant="outline" asChild><Link to="/">হোমে ফিরুন</Link></Button>
+                </div>
               </div>
             </>
           )}
