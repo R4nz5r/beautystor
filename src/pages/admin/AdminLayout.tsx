@@ -33,24 +33,23 @@ const AdminLayout = () => {
     locationRef.current = location.pathname;
   }, [location.pathname]);
 
-  // Reset unread when on chat page
+  // Reset unread when on chat page and save last-seen timestamp
   useEffect(() => {
     if (location.pathname === '/admin/chat') {
       setUnreadChat(0);
+      localStorage.setItem('admin_chat_last_seen', new Date().toISOString());
     }
   }, [location.pathname]);
 
-  // Load initial unread count
+  // Load initial unread count — only messages after last seen
   useEffect(() => {
     const loadUnread = async () => {
-      // Count user messages from open conversations that admin hasn't seen
-      // Simple approach: count messages from last 24h with sender_type='user'
-      const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+      const lastSeen = localStorage.getItem('admin_chat_last_seen') || new Date(0).toISOString();
       const { count } = await supabase
         .from('chat_messages')
         .select('*', { count: 'exact', head: true })
         .eq('sender_type', 'user')
-        .gte('created_at', since);
+        .gt('created_at', lastSeen);
       if (count && count > 0 && locationRef.current !== '/admin/chat') {
         setUnreadChat(count);
       }
