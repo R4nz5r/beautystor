@@ -10,6 +10,12 @@ import { toast } from 'sonner';
 import { Tag, X } from 'lucide-react';
 import { validateName, validatePhone, validateRequired } from '@/lib/validators';
 
+const UDDOKTAPAY_API_KEY = 'E7qcUplhcoNkvZJWkkIFVe2gBBcWzuM1cOZCWC4V';
+const UDDOKTAPAY_BASE_URL = 'https://beautystor.paymently.io/api';
+
+// Set to 'server' to use edge function, 'client' to call UddoktaPay directly
+const PAYMENT_MODE: 'server' | 'client' = 'server';
+
 const getSessionId = () => {
   let id = localStorage.getItem('checkout_session_id');
   if (!id) {
@@ -63,9 +69,9 @@ const Checkout = () => {
   useEffect(() => {
     saveIncompleteOrder(form);
   }, [form, saveIncompleteOrder]);
+
   const deliveryCharge = subtotal >= 500 ? 0 : 80;
 
-  // Calculate coupon discount
   const couponDiscount = appliedCoupon
     ? appliedCoupon.discount_type === 'percentage'
       ? Math.round(subtotal * appliedCoupon.discount_value / 100)
@@ -91,21 +97,18 @@ const Checkout = () => {
         return;
       }
 
-      // Check expiry
       if (data.expires_at && new Date(data.expires_at) < new Date()) {
         toast.error('এই কুপনের মেয়াদ শেষ হয়ে গেছে');
         setCouponLoading(false);
         return;
       }
 
-      // Check max uses
       if (data.max_uses && data.used_count >= data.max_uses) {
         toast.error('এই কুপন ব্যবহারের সীমা শেষ');
         setCouponLoading(false);
         return;
       }
 
-      // Check min order
       if (subtotal < data.min_order_amount) {
         toast.error(`এই কুপনের জন্য ন্যূনতম ৳${Number(data.min_order_amount).toLocaleString('bn-BD')} অর্ডার করতে হবে`);
         setCouponLoading(false);
@@ -146,6 +149,55 @@ const Checkout = () => {
     };
     setFormErrors(e);
     return !Object.values(e).some(Boolean);
+  };
+
+  const initiatePaymentServerSide = async (orderId: string, orderTotal: number) => {
+    const { data, error } = await supabase.functions.invoke('process-payment', {
+      body: {
+        order_id: orderId,
+        amount: orderTotal,
+        customer_name: form.name,
+        customer_email: '',
+        customer_phone: form.phone,
+      },
+    });
+
+    if (error || !data?.payment_url) {
+      throw new Error(data?.error || 'পেমেন্ট শুরু করতে সমস্যা হয়েছে');
+    }
+
+    return data.payment_url;
+  };
+
+  const initiatePaymentClientSide = async (orderId: string, orderTotal: number) => {
+    const appUrl = window.location.origin;
+
+    const res = await fetch(`${UDDOKTAPAY_BASE_URL}/checkout-v2`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'RT-UDDOKTAPAY-API-KEY': UDDOKTAPAY_API_KEY,
+      },
+      body: JSON.stringify({
+        full_name: form.name || 'Customer',
+        email: 'customer@beautystor.com',
+        amount: String(orderTotal),
+        metadata: { order_id: orderId },
+        redirect_url: `${appUrl}/order-confirmation/${orderId}`,
+        return_type: 'GET',
+        cancel_url: `${appUrl}/checkout`,
+        webhook_url: `https://fsrrmqfeevhcfednylhk.supabase.co/functions/v1/payment-webhook`,
+      }),
+    });
+
+    const data = await res.json();
+
+    if (!res.ok || !data.status || !data.payment_url) {
+      throw new Error(data.message || 'পেমেন্ট শুরু করতে সমস্যা হয়েছে');
+    }
+
+    return data.payment_url;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -191,6 +243,26 @@ const Checkout = () => {
       await supabase.from('incomplete_orders').delete().eq('session_id', sessionId.current);
       localStorage.removeItem('checkout_session_id');
 
+      if (form.paymentMethod === 'online') {
+        // Initiate online payment
+        try {
+          const paymentUrl = PAYMENT_MODE === 'server'
+            ? await initiatePaymentServerSide(order.id, total)
+            : await initiatePaymentClientSide(order.id, total);
+
+          clearCart();
+          window.location.href = paymentUrl;
+          return;
+        } catch (payErr: any) {
+          toast.error(payErr.message || 'পেমেন্ট শুরু করতে সমস্যা হয়েছে');
+          // Order created but payment failed - redirect to confirmation anyway
+          clearCart();
+          navigate(`/order-confirmation/${order.id}`);
+          return;
+        }
+      }
+
+      // COD flow
       clearCart();
       toast.success('অর্ডার সফলভাবে সম্পন্ন হয়েছে!');
       navigate(`/order-confirmation/${order.id}`);
@@ -261,8 +333,8 @@ const Checkout = () => {
                   <label className="flex items-center gap-3 p-3 border rounded-md cursor-pointer hover:bg-muted/50">
                     <input type="radio" name="payment" value="online" checked={form.paymentMethod === 'online'} onChange={() => setForm(f => ({ ...f, paymentMethod: 'online' }))} />
                     <div>
-                      <p className="font-medium text-sm">অনলাইন পেমেন্ট (আংশিক)</p>
-                      <p className="text-xs text-muted-foreground">মোট মূল্যের ১০% বা ডেলিভারি চার্জ অগ্রিম পরিশোধ করুন</p>
+                      <p className="font-medium text-sm">অনলাইন পেমেন্ট</p>
+                      <p className="text-xs text-muted-foreground">bKash, Nagad, Rocket বা ব্যাংক দিয়ে সম্পূর্ণ পেমেন্ট করুন</p>
                     </div>
                   </label>
                 </div>
@@ -322,18 +394,15 @@ const Checkout = () => {
                       <span>-৳{couponDiscount.toLocaleString('bn-BD')}</span>
                     </div>
                   )}
-                  {form.paymentMethod === 'online' && (
-                    <div className="flex justify-between text-primary">
-                      <span>অগ্রিম পেমেন্ট</span>
-                      <span>৳{Math.max(Math.ceil(total * 0.1), deliveryCharge).toLocaleString('bn-BD')}</span>
-                    </div>
-                  )}
                   <div className="border-t pt-2 flex justify-between font-bold text-base">
                     <span>মোট</span><span className="text-primary">৳{total.toLocaleString('bn-BD')}</span>
                   </div>
+                  {form.paymentMethod === 'online' && (
+                    <p className="text-xs text-muted-foreground text-center">অনলাইনে সম্পূর্ণ ৳{total.toLocaleString('bn-BD')} পরিশোধ করতে হবে</p>
+                  )}
                 </div>
                 <Button type="submit" className="w-full mt-4" disabled={loading}>
-                  {loading ? 'প্রসেসিং...' : 'অর্ডার কনফার্ম করুন'}
+                  {loading ? 'প্রসেসিং...' : form.paymentMethod === 'online' ? 'পেমেন্ট করুন' : 'অর্ডার কনফার্ম করুন'}
                 </Button>
               </div>
             </div>
