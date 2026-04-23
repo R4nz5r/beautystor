@@ -6,10 +6,6 @@ import { Button } from '@/components/ui/button';
 import Header from '@/components/store/Header';
 import Footer from '@/components/store/Footer';
 
-const UDDOKTAPAY_API_KEY = 'E7qcUplhcoNkvZJWkkIFVe2gBBcWzuM1cOZCWC4V';
-const UDDOKTAPAY_BASE_URL = 'https://beautystor.paymently.io/api';
-const PAYMENT_MODE: 'server' | 'client' = 'server';
-
 const OrderConfirmation = () => {
   const { id } = useParams();
   const [searchParams] = useSearchParams();
@@ -22,6 +18,7 @@ const OrderConfirmation = () => {
   } | null>(null);
 
   const invoiceId = searchParams.get('invoice_id');
+  const paymentFlag = searchParams.get('payment');
 
   // Verify payment if invoice_id is present
   useEffect(() => {
@@ -30,38 +27,11 @@ const OrderConfirmation = () => {
     const verifyPayment = async () => {
       setVerifying(true);
       try {
-        if (PAYMENT_MODE === 'server') {
-          const { data, error } = await supabase.functions.invoke('verify-payment', {
-            body: { invoice_id: invoiceId, order_id: id },
-          });
-          if (!error && data) {
-            setPaymentResult(data);
-          }
-        } else {
-          // Client-side verification
-          const res = await fetch(`${UDDOKTAPAY_BASE_URL}/verify-payment`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Accept': 'application/json',
-              'RT-UDDOKTAPAY-API-KEY': UDDOKTAPAY_API_KEY,
-            },
-            body: JSON.stringify({ invoice_id: invoiceId }),
-          });
-          const data = await res.json();
-          setPaymentResult({
-            status: data.status,
-            payment_method: data.payment_method,
-            transaction_id: data.transaction_id,
-          });
-
-          // Update order if completed
-          if (data.status === 'COMPLETED') {
-            await supabase.from('orders').update({
-              payment_status: 'paid' as const,
-              updated_at: new Date().toISOString(),
-            }).eq('id', id);
-          }
+        const { data, error } = await supabase.functions.invoke('verify-payment', {
+          body: { invoice_id: invoiceId, order_id: id },
+        });
+        if (!error && data) {
+          setPaymentResult(data);
         }
       } catch (err) {
         console.error('Payment verification failed:', err);
@@ -86,6 +56,11 @@ const OrderConfirmation = () => {
   }, [id, invoiceId, verifying]);
 
   const isPaid = paymentResult?.status === 'COMPLETED' || order?.payment_status === 'paid';
+  const isFailed = paymentFlag === 'failed' || paymentResult?.status === 'ERROR' || paymentResult?.status === 'FAILED';
+  const title = isFailed ? 'পেমেন্ট ব্যর্থ হয়েছে!' : 'অর্ডার সফল হয়েছে!';
+  const description = isFailed
+    ? 'পেমেন্ট সম্পন্ন হয়নি। চাইলে অর্ডার বিস্তারিত দেখে আবার চেষ্টা করতে পারেন।'
+    : 'আপনার অর্ডার সফলভাবে গ্রহণ করা হয়েছে।';
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -102,22 +77,14 @@ const OrderConfirmation = () => {
             <>
               {isPaid ? (
                 <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-4" />
-              ) : paymentResult?.status === 'ERROR' ? (
+              ) : isFailed ? (
                 <XCircle className="h-16 w-16 text-destructive mx-auto mb-4" />
               ) : (
-                <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-4" />
+                <Package className="h-16 w-16 text-primary mx-auto mb-4" />
               )}
 
-              <h1 className="text-2xl font-bold mb-2">
-                {paymentResult?.status === 'ERROR'
-                  ? 'পেমেন্ট ব্যর্থ হয়েছে!'
-                  : 'অর্ডার সফল হয়েছে!'}
-              </h1>
-              <p className="text-muted-foreground mb-2">
-                {paymentResult?.status === 'ERROR'
-                  ? 'পেমেন্ট সম্পন্ন হয়নি। আপনি পুনরায় চেষ্টা করতে পারেন।'
-                  : 'আপনার অর্ডার সফলভাবে গ্রহণ করা হয়েছে।'}
-              </p>
+              <h1 className="text-2xl font-bold mb-2">{title}</h1>
+              <p className="text-muted-foreground mb-2">{description}</p>
 
               {order && (
                 <div className="bg-card border rounded-lg p-4 my-6 text-sm text-left space-y-2">
@@ -135,8 +102,8 @@ const OrderConfirmation = () => {
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">পেমেন্ট স্ট্যাটাস</span>
-                    <span className={isPaid ? 'text-green-600 font-medium' : 'text-yellow-600'}>
-                      {isPaid ? '✅ পেইড' : order.payment_method === 'cod' ? 'ডেলিভারিতে' : '⏳ পেন্ডিং'}
+                    <span className={isPaid ? 'text-green-600 font-medium' : isFailed ? 'text-destructive font-medium' : 'text-yellow-600'}>
+                      {isPaid ? '✅ পেইড' : isFailed ? '❌ ব্যর্থ' : order.payment_method === 'cod' ? 'ডেলিভারিতে' : '⏳ পেন্ডিং'}
                     </span>
                   </div>
                   {paymentResult?.payment_method && (
