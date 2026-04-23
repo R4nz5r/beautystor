@@ -10,12 +10,6 @@ import { toast } from 'sonner';
 import { Tag, X } from 'lucide-react';
 import { validateName, validatePhone, validateRequired } from '@/lib/validators';
 
-const UDDOKTAPAY_API_KEY = 'E7qcUplhcoNkvZJWkkIFVe2gBBcWzuM1cOZCWC4V';
-const UDDOKTAPAY_BASE_URL = 'https://beautystor.paymently.io/api';
-
-// Set to 'server' to use edge function, 'client' to call UddoktaPay directly
-const PAYMENT_MODE: 'server' | 'client' = 'server';
-
 const getSessionId = () => {
   let id = localStorage.getItem('checkout_session_id');
   if (!id) {
@@ -169,37 +163,6 @@ const Checkout = () => {
     return data.payment_url;
   };
 
-  const initiatePaymentClientSide = async (orderId: string, orderTotal: number) => {
-    const appUrl = window.location.origin;
-
-    const res = await fetch(`${UDDOKTAPAY_BASE_URL}/checkout-v2`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        'RT-UDDOKTAPAY-API-KEY': UDDOKTAPAY_API_KEY,
-      },
-      body: JSON.stringify({
-        full_name: form.name || 'Customer',
-        email: 'customer@beautystor.com',
-        amount: String(orderTotal),
-        metadata: { order_id: orderId },
-        redirect_url: `${appUrl}/order-confirmation/${orderId}`,
-        return_type: 'GET',
-        cancel_url: `${appUrl}/checkout`,
-        webhook_url: `https://fsrrmqfeevhcfednylhk.supabase.co/functions/v1/payment-webhook`,
-      }),
-    });
-
-    const data = await res.json();
-
-    if (!res.ok || !data.status || !data.payment_url) {
-      throw new Error(data.message || 'পেমেন্ট শুরু করতে সমস্যা হয়েছে');
-    }
-
-    return data.payment_url;
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validateForm()) return;
@@ -246,18 +209,14 @@ const Checkout = () => {
       if (form.paymentMethod === 'online') {
         // Initiate online payment
         try {
-          const paymentUrl = PAYMENT_MODE === 'server'
-            ? await initiatePaymentServerSide(order.id, total)
-            : await initiatePaymentClientSide(order.id, total);
+          const paymentUrl = await initiatePaymentServerSide(order.id, total);
 
           clearCart();
           window.location.href = paymentUrl;
           return;
         } catch (payErr: any) {
           toast.error(payErr.message || 'পেমেন্ট শুরু করতে সমস্যা হয়েছে');
-          // Order created but payment failed - redirect to confirmation anyway
-          clearCart();
-          navigate(`/order-confirmation/${order.id}`);
+          navigate(`/order-confirmation/${order.id}?payment=failed`);
           return;
         }
       }
