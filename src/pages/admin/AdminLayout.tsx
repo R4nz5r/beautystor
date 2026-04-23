@@ -45,14 +45,24 @@ const AdminLayout = () => {
   useEffect(() => {
     const loadUnread = async () => {
       const lastSeen = localStorage.getItem('admin_chat_last_seen') || new Date(0).toISOString();
+      const { data: activeConversations } = await supabase
+        .from('chat_conversations')
+        .select('id')
+        .neq('status', 'closed');
+
+      const activeIds = (activeConversations || []).map((conversation) => conversation.id);
+      if (activeIds.length === 0) {
+        setUnreadChat(0);
+        return;
+      }
+
       const { count } = await supabase
         .from('chat_messages')
         .select('*', { count: 'exact', head: true })
         .eq('sender_type', 'user')
+        .in('conversation_id', activeIds)
         .gt('created_at', lastSeen);
-      if (count && count > 0 && locationRef.current !== '/admin/chat') {
-        setUnreadChat(count);
-      }
+      setUnreadChat(locationRef.current !== '/admin/chat' ? count || 0 : 0);
     };
     if (user && isAdmin) loadUnread();
   }, [user, isAdmin]);
@@ -68,9 +78,33 @@ const AdminLayout = () => {
         schema: 'public',
         table: 'chat_messages',
       }, (payload: any) => {
-        if (payload.new?.sender_type === 'user') {
+        if (payload.new?.sender_type === 'user' && locationRef.current !== '/admin/chat') {
+          supabase
+            .from('chat_conversations')
+            .select('status')
+            .eq('id', payload.new.conversation_id)
+            .maybeSingle()
+            .then(({ data }) => {
+              if (data?.status !== 'closed') {
+                setUnreadChat(prev => prev + 1);
+              }
+            });
+        }
+      })
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'chat_conversations',
+      }, (payload: any) => {
+        if (payload.new?.status === 'closed') {
           if (locationRef.current !== '/admin/chat') {
-            setUnreadChat(prev => prev + 1);
+            const lastSeen = localStorage.getItem('admin_chat_last_seen') || new Date(0).toISOString();
+            supabase
+              .from('chat_messages')
+              .select('*', { count: 'exact', head: true })
+              .eq('sender_type', 'user')
+              .gt('created_at', lastSeen)
+              .then(({ count }) => setUnreadChat(count || 0));
           }
         }
       })
