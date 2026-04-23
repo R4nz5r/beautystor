@@ -149,7 +149,6 @@ const Checkout = () => {
     const { data, error } = await supabase.functions.invoke('process-payment', {
       body: {
         order_id: orderId,
-        amount: orderTotal,
         customer_name: form.name,
         customer_email: '',
         customer_phone: form.phone,
