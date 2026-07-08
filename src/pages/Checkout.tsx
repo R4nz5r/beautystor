@@ -32,7 +32,7 @@ const Checkout = () => {
     paymentMethod: 'cod' as 'cod' | 'online',
   });
 
-  const sessionId = useRef(getSessionId());
+  const sessionId = useRef(getAppSessionId());
   const saveTimeout = useRef<ReturnType<typeof setTimeout>>();
 
   const saveIncompleteOrder = useCallback((formData: typeof form) => {
