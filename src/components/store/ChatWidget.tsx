@@ -4,12 +4,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { validateName, validatePhone } from '@/lib/validators';
+import { getAppSessionId } from '@/lib/session';
 
-const getSessionId = () => {
-  let sid = localStorage.getItem('chat_session_id');
-  if (!sid) { sid = crypto.randomUUID(); localStorage.setItem('chat_session_id', sid); }
-  return sid;
-};
 
 const ChatWidget = () => {
   const [open, setOpen] = useState(false);
