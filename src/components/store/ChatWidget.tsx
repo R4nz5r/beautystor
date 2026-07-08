@@ -117,9 +117,7 @@ const ChatWidget = () => {
   };
 
   const startNewChat = () => {
-    localStorage.removeItem('chat_session_id');
-    sessionId.current = crypto.randomUUID();
-    localStorage.setItem('chat_session_id', sessionId.current);
+    // Keep the app session id (RLS header) — start a fresh conversation.
     setConversationId(null);
     setMessages([]);
     setStarted(false);
@@ -128,6 +126,7 @@ const ChatWidget = () => {
     setPhone('');
     setInput('');
   };
+
 
   if (!open) {
     return (
