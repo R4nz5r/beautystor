@@ -18,11 +18,14 @@ const ChatWidget = () => {
   const [sending, setSending] = useState(false);
   const [ended, setEnded] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
-  const sessionId = useRef(getSessionId());
+  const sessionId = useRef(getAppSessionId());
 
   useEffect(() => {
     supabase.from('chat_conversations').select('*')
-      .eq('session_id', sessionId.current).maybeSingle()
+      .eq('session_id', sessionId.current)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
       .then(({ data }) => {
         if (data) {
           if (data.status === 'closed') {
@@ -40,6 +43,7 @@ const ChatWidget = () => {
         }
       });
   }, []);
+
 
   const loadMessages = async (convId: string) => {
     const { data } = await supabase.from('chat_messages').select('*')
