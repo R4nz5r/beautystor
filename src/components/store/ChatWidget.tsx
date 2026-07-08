@@ -53,22 +53,19 @@ const ChatWidget = () => {
 
   useEffect(() => {
     if (!conversationId) return;
-    const channel = supabase.channel(`chat-${conversationId}`)
-      .on('postgres_changes', {
-        event: 'INSERT', schema: 'public', table: 'chat_messages',
-        filter: `conversation_id=eq.${conversationId}`,
-      }, (payload) => {
-        setMessages(prev => [...prev, payload.new]);
-      })
-      .on('postgres_changes', {
-        event: 'UPDATE', schema: 'public', table: 'chat_conversations',
-        filter: `id=eq.${conversationId}`,
-      }, (payload: any) => {
-        if (payload.new?.status === 'closed') setEnded(true);
-      })
-      .subscribe();
-    return () => { supabase.removeChannel(channel); };
+    // Poll for new messages / status changes (Realtime RLS can't read the
+    // per-visitor session header, so postgres_changes won't deliver rows).
+    const interval = setInterval(() => {
+      loadMessages(conversationId);
+      supabase.from('chat_conversations').select('status')
+        .eq('id', conversationId).maybeSingle()
+        .then(({ data }) => {
+          if (data?.status === 'closed') setEnded(true);
+        });
+    }, 4000);
+    return () => clearInterval(interval);
   }, [conversationId]);
+
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
