@@ -9,15 +9,8 @@ import Footer from '@/components/store/Footer';
 import { toast } from 'sonner';
 import { Tag, X } from 'lucide-react';
 import { validateName, validatePhone, validateRequired } from '@/lib/validators';
+import { getAppSessionId } from '@/lib/session';
 
-const getSessionId = () => {
-  let id = localStorage.getItem('checkout_session_id');
-  if (!id) {
-    id = crypto.randomUUID();
-    localStorage.setItem('checkout_session_id', id);
-  }
-  return id;
-};
 
 const Checkout = () => {
   const { items, subtotal, clearCart } = useCart();
@@ -39,7 +32,7 @@ const Checkout = () => {
     paymentMethod: 'cod' as 'cod' | 'online',
   });
 
-  const sessionId = useRef(getSessionId());
+  const sessionId = useRef(getAppSessionId());
   const saveTimeout = useRef<ReturnType<typeof setTimeout>>();
 
   const saveIncompleteOrder = useCallback((formData: typeof form) => {

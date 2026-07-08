@@ -4,12 +4,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { validateName, validatePhone } from '@/lib/validators';
+import { getAppSessionId } from '@/lib/session';
 
-const getSessionId = () => {
-  let sid = localStorage.getItem('chat_session_id');
-  if (!sid) { sid = crypto.randomUUID(); localStorage.setItem('chat_session_id', sid); }
-  return sid;
-};
 
 const ChatWidget = () => {
   const [open, setOpen] = useState(false);
@@ -22,11 +18,14 @@ const ChatWidget = () => {
   const [sending, setSending] = useState(false);
   const [ended, setEnded] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
-  const sessionId = useRef(getSessionId());
+  const sessionId = useRef(getAppSessionId());
 
   useEffect(() => {
     supabase.from('chat_conversations').select('*')
-      .eq('session_id', sessionId.current).maybeSingle()
+      .eq('session_id', sessionId.current)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
       .then(({ data }) => {
         if (data) {
           if (data.status === 'closed') {
@@ -45,6 +44,7 @@ const ChatWidget = () => {
       });
   }, []);
 
+
   const loadMessages = async (convId: string) => {
     const { data } = await supabase.from('chat_messages').select('*')
       .eq('conversation_id', convId).order('created_at', { ascending: true });
@@ -53,22 +53,19 @@ const ChatWidget = () => {
 
   useEffect(() => {
     if (!conversationId) return;
-    const channel = supabase.channel(`chat-${conversationId}`)
-      .on('postgres_changes', {
-        event: 'INSERT', schema: 'public', table: 'chat_messages',
-        filter: `conversation_id=eq.${conversationId}`,
-      }, (payload) => {
-        setMessages(prev => [...prev, payload.new]);
-      })
-      .on('postgres_changes', {
-        event: 'UPDATE', schema: 'public', table: 'chat_conversations',
-        filter: `id=eq.${conversationId}`,
-      }, (payload: any) => {
-        if (payload.new?.status === 'closed') setEnded(true);
-      })
-      .subscribe();
-    return () => { supabase.removeChannel(channel); };
+    // Poll for new messages / status changes (Realtime RLS can't read the
+    // per-visitor session header, so postgres_changes won't deliver rows).
+    const interval = setInterval(() => {
+      loadMessages(conversationId);
+      supabase.from('chat_conversations').select('status')
+        .eq('id', conversationId).maybeSingle()
+        .then(({ data }) => {
+          if (data?.status === 'closed') setEnded(true);
+        });
+    }, 4000);
+    return () => clearInterval(interval);
   }, [conversationId]);
+
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -120,9 +117,7 @@ const ChatWidget = () => {
   };
 
   const startNewChat = () => {
-    localStorage.removeItem('chat_session_id');
-    sessionId.current = crypto.randomUUID();
-    localStorage.setItem('chat_session_id', sessionId.current);
+    // Keep the app session id (RLS header) — start a fresh conversation.
     setConversationId(null);
     setMessages([]);
     setStarted(false);
@@ -131,6 +126,7 @@ const ChatWidget = () => {
     setPhone('');
     setInput('');
   };
+
 
   if (!open) {
     return (
