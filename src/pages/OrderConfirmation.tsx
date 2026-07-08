@@ -49,7 +49,7 @@ const OrderConfirmation = () => {
     const loadOrder = async () => {
       // Small delay if verifying to let payment status update
       if (invoiceId) await new Promise(r => setTimeout(r, 1500));
-      const { data } = await supabase.from('orders').select('*').eq('id', id).single();
+      const { data } = await supabase.rpc('get_order_confirmation', { _order_id: id });
       if (data) setOrder(data);
     };
     loadOrder();
